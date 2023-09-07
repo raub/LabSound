@@ -308,6 +308,11 @@ class lab::PolyBlepImpl
         return amplitude * y;
     }
 
+    double sine() const
+    {
+        return amplitude * sin(t* 2.f * static_cast<float>(LAB_PI));
+    }
+
     PolyBLEPType type;
 
     double sampleRate;
@@ -333,6 +338,7 @@ public:
     {
         switch (type) 
         {
+            case PolyBLEPType::SINE: return sine();
             case PolyBLEPType::TRIANGLE: return tri();
             case PolyBLEPType::SQUARE: return sqr();
             case PolyBLEPType::RECTANGLE: return rect();
@@ -345,6 +351,7 @@ public:
             case PolyBLEPType::TRIANGULAR_PULSE: return trip();
             case PolyBLEPType::TRAPEZOID_FIXED: return trap();
             case PolyBLEPType::TRAPEZOID_VARIABLE: return trap2();
+            
             default: return 0.0;
         }
     }
@@ -379,7 +386,7 @@ public:
 // clang-format on
 
 static char const * const s_polyblep_types[] = {
-    "Triangle", "Square", "Sawtooth", "Ramp", "Modified_Triangle", "Modified_Square", "Half Wave Rectified Sine",
+    "Sine", "Triangle", "Square", "Sawtooth", "Ramp", "Modified_Triangle", "Modified_Square", "Half Wave Rectified Sine",
     "Full Wave Rectified Sine", "Triangular Pulse", "Trapezoid Fixed", "Trapezoid Variable",
     nullptr};
 

@@ -34,6 +34,7 @@ class AudioSetting;
 
 enum class PolyBLEPType
 {
+    SINE,
     TRIANGLE,
     SQUARE,
     RECTANGLE,
