@@ -75,14 +75,16 @@ public:
 
     std::shared_ptr<AudioParam> amplitude() { return m_amplitude; }
     std::shared_ptr<AudioParam> frequency() { return m_frequency; }
+    std::shared_ptr<AudioParam> detune() { return m_detune; }
 
     std::shared_ptr<AudioParam> m_amplitude; // default 1.0
     std::shared_ptr<AudioParam> m_frequency; // hz
-
+    std::shared_ptr<AudioParam> m_detune; // cents
     void processPolyBLEP(ContextRenderLock & r, int bufferSize, int offset, int count);
 
     AudioFloatArray m_amplitudeValues;
     AudioFloatArray m_frequencyValues;
+    AudioFloatArray m_detuneValues;
 };
 
 }  // namespace lab

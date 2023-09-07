@@ -385,7 +385,9 @@ static char const * const s_polyblep_types[] = {
 
 static AudioParamDescriptor s_pbParams[] = {
     {"frequency",  "FREQ", 440, 0, 100000},
-    {"amplitude",  "AMPL",   1, 0, 100000}, nullptr };
+    {"amplitude",  "AMPL",   1, 0, 100000}, 
+    {"detune", "DTUN", 0.0, -4800.0, 4800.0},
+    nullptr };
 static AudioSettingDescriptor s_pbSettings[] = {{"type", "TYPE", SettingType::Enum, s_polyblep_types}, nullptr};
 
 AudioNodeDescriptor * PolyBLEPNode::desc()
@@ -395,11 +397,13 @@ AudioNodeDescriptor * PolyBLEPNode::desc()
 }
 
 PolyBLEPNode::PolyBLEPNode(AudioContext & ac)
-    : AudioScheduledSourceNode(ac, *desc())
+    : AudioScheduledSourceNode(ac, *desc()),
+      m_detuneValues(AudioNode::ProcessingSizeInFrames)
 {
     m_type = setting("type");
     m_frequency = param("frequency");
     m_amplitude = param("amplitude");
+    m_detune = param("detune");
 
     m_type->setValueChanged([this]() { 
         setType(PolyBLEPType(m_type->valueUint32())); 
@@ -447,6 +451,7 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
 
     if (bufferSize > m_amplitudeValues.size()) m_amplitudeValues.allocate(bufferSize);
     if (bufferSize > m_frequencyValues.size()) m_frequencyValues.allocate(bufferSize);
+    if (bufferSize > m_detuneValues.size()) m_detuneValues.allocate(bufferSize);
 
     // fetch the amplitudes
     float * amplitudes = m_amplitudeValues.data();
@@ -475,6 +480,20 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
     }
 
     // calculate and write the wave
+    
+
+    float * detunes = m_detuneValues.data();
+    if (m_detune->hasSampleAccurateValues())
+    {
+        m_detune->calculateSampleAccurateValues(r, detunes, bufferSize);
+    }
+    else
+    {
+        m_detune->smooth(r);
+        float detuneValue = m_detune->smoothedValue();
+        for (int i = 0; i < bufferSize; ++i) detunes[i] = detuneValue;
+    }
+
     float * destination = outputBus->channel(0)->mutableData() + offset;
     /// @fixme these values should be per sample, not per quantum
     /// -or- they should be settings if they don't vary per sample
@@ -483,7 +502,9 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
     {
         // Update the PolyBlepImpl's frequency for each sample
-        polyblep->setFrequency(frequencies[i]);
+        double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
+        // Update the PolyBlepImpl's frequency for each sample
+        polyblep->setFrequency(frequencies[i] * detuneFactor);
         destination[i] = (amplitudes[i] * static_cast<float>(polyblep->getPhaseAndIncrement()));
     }
 
