@@ -446,6 +446,7 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
     }
 
     if (bufferSize > m_amplitudeValues.size()) m_amplitudeValues.allocate(bufferSize);
+    if (bufferSize > m_frequencyValues.size()) m_frequencyValues.allocate(bufferSize);
 
     // fetch the amplitudes
     float * amplitudes = m_amplitudeValues.data();
@@ -460,16 +461,29 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
         for (int i = 0; i < bufferSize; ++i) amplitudes[i] = amp;
     }
 
-    // calculate and write the wave
-    float* destination = outputBus->channel(0)->mutableData() + offset;
+    // fetch the frequencies
+    float * frequencies = m_frequencyValues.data();
+    if (m_frequency->hasSampleAccurateValues())
+    {
+        m_frequency->calculateSampleAccurateValues(r, frequencies, bufferSize);
+    }
+    else
+    {
+        m_frequency->smooth(r);
+        float freq = m_frequency->smoothedValue();
+        for (int i = 0; i < bufferSize; ++i) frequencies[i] = freq;
+    }
 
+    // calculate and write the wave
+    float * destination = outputBus->channel(0)->mutableData() + offset;
     /// @fixme these values should be per sample, not per quantum
     /// -or- they should be settings if they don't vary per sample
-    polyblep->setFrequency(m_frequency->value());
     polyblep->setWaveform(static_cast<PolyBLEPType>(m_type->valueUint32()));
 
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
     {
+        // Update the PolyBlepImpl's frequency for each sample
+        polyblep->setFrequency(frequencies[i]);
         destination[i] = (amplitudes[i] * static_cast<float>(polyblep->getPhaseAndIncrement()));
     }
 

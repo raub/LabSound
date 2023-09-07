@@ -82,6 +82,7 @@ public:
     void processPolyBLEP(ContextRenderLock & r, int bufferSize, int offset, int count);
 
     AudioFloatArray m_amplitudeValues;
+    AudioFloatArray m_frequencyValues;
 };
 
 }  // namespace lab
