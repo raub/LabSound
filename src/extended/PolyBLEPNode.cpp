@@ -397,7 +397,8 @@ AudioNodeDescriptor * PolyBLEPNode::desc()
 }
 
 PolyBLEPNode::PolyBLEPNode(AudioContext & ac)
-    : AudioScheduledSourceNode(ac, *desc()),
+    : AudioScheduledSourceNode(ac, *desc()), 
+      m_frequencyValues(AudioNode::ProcessingSizeInFrames),
       m_detuneValues(AudioNode::ProcessingSizeInFrames)
 {
     m_type = setting("type");
