@@ -38,6 +38,7 @@ namespace lab
     class ADSRNode::ADSRNodeImpl : public lab::AudioProcessor
     {
     public:
+        bool isReleaseCompleted = false;
         float cached_sample_rate = 48000.f;   // typical default
         struct LerpTarget { float t, dvdt; };
         std:: deque<LerpTarget> _lerp;
@@ -99,6 +100,7 @@ namespace lab
                 if (_currentGate == 0 && _gateArray[i] > 0)
                 {
                     // attack begin
+                    isReleaseCompleted = false;
                     _currentGate = 1;
                     _lerp.clear();  // forget all previous lerps
                     float attackLevel = m_attackLevel->valueFloat();
@@ -148,7 +150,14 @@ namespace lab
                             break;
                         }
                         else
+                        {
                             _lerp.pop_front();
+                            if (this->m_gate->value() < 1)
+                            {
+                                isReleaseCompleted = true;
+                            }
+                        }
+                            
                     }
                     if (!assigned)
                         envelope[i] = currentEnvelope;
@@ -285,5 +294,9 @@ namespace lab
         gate()->setValue(0.f);
     }
 
+    bool ADSRNode::isReleaseCompleted() const
+    {
+        return adsr_impl->isReleaseCompleted;
+    }
 
 } // End namespace lab
