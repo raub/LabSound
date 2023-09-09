@@ -51,11 +51,6 @@ void MoogFilterNode::process(ContextRenderLock & r, int bufferSize)
 
 void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, int offset, int count)
 {
-
-    // FIXME: for some cases there is a nice optimization to avoid processing here, and let the gain change
-    // happen in the summing junction input of the AudioNode we're connected to.
-    // Then we can avoid all of the following:
-
     AudioBus * outputBus = output(0)->bus(r);
     ASSERT(outputBus);
 
@@ -65,9 +60,6 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
         outputBus->zero();
         return;
     }
-
-    //const float sample_rate = r.context()->sampleRate();
-    //polyblep->setSampleRate(sample_rate);
     
     if (!isInitialized() || !input(0)->isConnected())
     {
@@ -124,15 +116,18 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
     const float * source = inputBus->channel(0)->data();
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
      {
+        //fc = cutoff, nearly linear[0, 1]->[0, fs / 2] 
+        //res = resonance[0, 4]->[no resonance, self - oscillation]
+
         double input = source[i];
         double fc = cutoffs[i];
         double res = resos[i];
-        //std::cout << "fc:" << fc << ", res:" << res << std::endl;
         double f = fc * 1.16;
         double fb = res * (1.0 - 0.15 * f * f);
+
         input -= out4 * fb;
         input *= 0.35013 * (f * f) * (f * f);
-        out1 = input + 0.3 * in1 + (1 - f) * out1;  // Pole 1
+        out1 = input + 0.3 * in1 + (1 - f) * out1; // Pole 1
         in1 = input;
         out2 = out1 + 0.3 * in2 + (1 - f) * out2;  // Pole 2
         in2 = out1;
@@ -144,12 +139,10 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
      }
 
      outputBus->clearSilentFlag();
-
 }
 
 void MoogFilterNode::reset(ContextRenderLock & r)
 {
-    // Snap directly to desired gain.
     in1 = in2 = in3 = in4 = 0.0;
     out1 = out2 = out3 = out4 = 0.0;
 }
