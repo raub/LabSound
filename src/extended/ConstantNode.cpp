@@ -33,6 +33,7 @@ ConstantNode::ConstantNode(AudioContext & ac)
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
 
     m_constantValue = param("constantValue");
+    m_constantValue->setValue(1.0f);
     initialize();
 }
 
@@ -71,7 +72,10 @@ void ConstantNode::processConstant(ContextRenderLock & r, int bufferSize, int of
 
     int outputBusChannelCount = outputBus->numberOfChannels();
 
-    if (bufferSize > m_sampleAccurateConstantValues.size()) m_sampleAccurateConstantValues.allocate(bufferSize);
+    if (bufferSize > m_sampleAccurateConstantValues.size()) 
+    {
+        m_sampleAccurateConstantValues.allocate(bufferSize);
+    }
 
     // fetch the constants
     float * constants = m_sampleAccurateConstantValues.data();
