@@ -38,7 +38,7 @@ namespace lab
     class ADSRNode::ADSRNodeImpl : public lab::AudioProcessor
     {
     public:
-        bool isReleaseCompleted = false;
+        bool isReleaseCompleted = true;
         float cached_sample_rate = 48000.f;   // typical default
         struct LerpTarget { float t, dvdt; };
         std:: deque<LerpTarget> _lerp;
