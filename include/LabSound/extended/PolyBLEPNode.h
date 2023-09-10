@@ -78,11 +78,15 @@ public:
     std::shared_ptr<AudioParam> frequency() { return m_frequency; }
     std::shared_ptr<AudioParam> detune() { return m_detune; }
     std::shared_ptr<AudioParam> pulseWidth() { return m_pulseWidth; }
+    std::shared_ptr<AudioParam> phaseMod() { return m_phaseMod; }
+    std::shared_ptr<AudioParam> phaseModDepth() { return m_phaseModDepth; }
 
-    std::shared_ptr<AudioParam> m_amplitude;   // default 1.0
-    std::shared_ptr<AudioParam> m_frequency;   // hz
-    std::shared_ptr<AudioParam> m_detune;      // cents
-    std::shared_ptr<AudioParam> m_pulseWidth;  // pulse width
+    std::shared_ptr<AudioParam> m_amplitude;      // default 1.0
+    std::shared_ptr<AudioParam> m_frequency;      // hz
+    std::shared_ptr<AudioParam> m_detune;         // cents
+    std::shared_ptr<AudioParam> m_pulseWidth;     // pulse width
+    std::shared_ptr<AudioParam> m_phaseMod;       // phase modulation
+    std::shared_ptr<AudioParam> m_phaseModDepth;  // phase modulation depth
 
     void processPolyBLEP(ContextRenderLock & r, int bufferSize, int offset, int count);
 
@@ -90,6 +94,8 @@ public:
     AudioFloatArray m_frequencyValues;
     AudioFloatArray m_detuneValues;
     AudioFloatArray m_pulseWidthValues;
+    AudioFloatArray m_phaseModValues;
+    AudioFloatArray m_phaseModDepthValues;
 };
 
 }  // namespace lab

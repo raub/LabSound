@@ -99,7 +99,6 @@ class lab::PolyBlepImpl
         }
 
         y += 4 * freqInSecondsPerSample * (blamp(t1, freqInSecondsPerSample) - blamp(t2, freqInSecondsPerSample));
-
         return amplitude * y;
     }
 
@@ -314,7 +313,8 @@ class lab::PolyBlepImpl
     }
 
     PolyBLEPType type;
-
+    double phaseMod = 0.0;
+    double phaseModDepth = 0.0;
     double sampleRate;
     double freqInSecondsPerSample;
     double amplitude {1.f};  // Frequency dependent gain [0.0..1.0]
@@ -330,6 +330,8 @@ public:
         setWaveform(PolyBLEPType::TRIANGLE);
         setFrequency(440.0);
         setPulseWidth(0.5);
+        setPhaseMod(0.0);
+        setPhaseModDepth(0.0);
     }
 
     ~PolyBlepImpl() = default;
@@ -358,7 +360,8 @@ public:
 
     void incrementPhase()
     {
-        t += freqInSecondsPerSample;
+        const float mod = 1.0 + phaseMod*phaseModDepth;
+        t += freqInSecondsPerSample * mod;
         t -= bitwise_or_zero(t);
     }
 
@@ -367,6 +370,14 @@ public:
         const double sample = get();
         incrementPhase();
         return sample;
+    }
+
+    void setPhaseMod(float val) {
+        phaseMod = val;
+    }
+
+    void setPhaseModDepth(float val) {
+        phaseModDepth = val;
     }
 
     void syncToPhase(const double phase)
@@ -395,7 +406,9 @@ static AudioParamDescriptor s_pbParams[] = {
     {"amplitude",  "AMPL",   1, 0, 100000}, 
     {"detune", "DTUN", 0.0, -4800.0, 4800.0},
     {"pulseWidth", "PWDTH", 0.0, 0.0, 1.0},
-    nullptr };
+    {"phaseMod", "PHASE", 0.0, -1.0, 1.0},
+    {"phaseModDepth", "PHDPTH", 0.0, 0.0, 100.0},
+    nullptr};
 static AudioSettingDescriptor s_pbSettings[] = {{"type", "TYPE", SettingType::Enum, s_polyblep_types}, nullptr};
 
 AudioNodeDescriptor * PolyBLEPNode::desc()
@@ -408,13 +421,23 @@ PolyBLEPNode::PolyBLEPNode(AudioContext & ac)
     : AudioScheduledSourceNode(ac, *desc()), 
       m_frequencyValues(AudioNode::ProcessingSizeInFrames),
       m_detuneValues(AudioNode::ProcessingSizeInFrames), 
-      m_pulseWidthValues(AudioNode::ProcessingSizeInFrames)
+      m_pulseWidthValues(AudioNode::ProcessingSizeInFrames), 
+      m_phaseModValues(AudioNode::ProcessingSizeInFrames), 
+      m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames)
 {
     m_type = setting("type");
     m_frequency = param("frequency");
     m_amplitude = param("amplitude");
     m_detune = param("detune");
     m_pulseWidth = param("pulseWidth");
+    m_phaseMod = param("phaseMod");
+    m_phaseModDepth = param("phaseModDepth");
+    
+    m_amplitude->setValue(1.f);
+    m_detune->setValue(0.f);
+    m_pulseWidth->setValue(0.5f);
+    m_phaseMod->setValue(0.f);
+    m_phaseModDepth->setValue(0.f);
 
     m_type->setValueChanged([this]() { 
         setType(PolyBLEPType(m_type->valueUint32())); 
@@ -464,6 +487,8 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
     if (bufferSize > m_frequencyValues.size()) m_frequencyValues.allocate(bufferSize);
     if (bufferSize > m_detuneValues.size()) m_detuneValues.allocate(bufferSize);
     if (bufferSize > m_pulseWidthValues.size()) m_pulseWidthValues.allocate(bufferSize);
+    if (bufferSize > m_phaseModValues.size()) m_phaseModValues.allocate(bufferSize);
+    if (bufferSize > m_phaseModDepthValues.size()) m_phaseModDepthValues.allocate(bufferSize);
 
     // fetch the amplitudes
     float * amplitudes = m_amplitudeValues.data();
@@ -492,8 +517,6 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
     }
 
     // calculate and write the wave
-    
-
     float * detunes = m_detuneValues.data();
     if (m_detune->hasSampleAccurateValues())
     {
@@ -518,9 +541,32 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
         for (int i = 0; i < bufferSize; ++i) pulseWidths[i] = pulseWidthValue;
     }
 
+    float * phaseMods = m_phaseModValues.data();
+    if (m_phaseMod->hasSampleAccurateValues())
+    {
+        m_phaseMod->calculateSampleAccurateValues(r, phaseMods, bufferSize);
+    }
+    else
+    {
+        m_phaseMod->smooth(r);
+        float phaseModValue = m_phaseMod->smoothedValue();
+        for (int i = 0; i < bufferSize; ++i) phaseMods[i] = phaseModValue;
+    }
+
+    float * phaseModDepths = m_phaseModDepthValues.data();
+    if (m_phaseModDepth->hasSampleAccurateValues())
+    {
+        m_phaseModDepth->calculateSampleAccurateValues(r, phaseModDepths, bufferSize);
+    }
+    else
+    {
+        m_phaseModDepth->smooth(r);
+        float phaseModDepthValue = m_phaseModDepth->smoothedValue();
+        for (int i = 0; i < bufferSize; ++i) phaseModDepths[i] = phaseModDepthValue;
+    }
+
+
     float * destination = outputBus->channel(0)->mutableData() + offset;
-    /// @fixme these values should be per sample, not per quantum
-    /// -or- they should be settings if they don't vary per sample
     polyblep->setWaveform(static_cast<PolyBLEPType>(m_type->valueUint32()));
 
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
@@ -529,7 +575,9 @@ void PolyBLEPNode::processPolyBLEP(ContextRenderLock & r, int bufferSize, int of
         double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
         // Update the PolyBlepImpl's frequency for each sample
         polyblep->setFrequency(frequencies[i] * detuneFactor);
-        polyblep->setPulseWidth(pulseWidths[i]*0.498f+0.5f);
+        polyblep->setPulseWidth(pulseWidths[i]);
+        polyblep->setPhaseMod(phaseMods[i]);
+        polyblep->setPhaseModDepth(phaseModDepths[i]);
         destination[i] = (amplitudes[i] * static_cast<float>(polyblep->getPhaseAndIncrement()));
     }
 
