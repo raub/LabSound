@@ -53,6 +53,8 @@
 #include "LabSound/extended/SpatializationNode.h"
 #include "LabSound/extended/SpectralMonitorNode.h"
 #include "LabSound/extended/SupersawNode.h"
+#include "LabSound/extended/ConstantNode.h"
+#include "LabSound/extended/MoogFilterNode.h"
 
 #endif
 
