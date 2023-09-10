@@ -36,21 +36,34 @@ public:
 
     std::shared_ptr<AudioParam> cutoff() const { return m_cutoff; }
     std::shared_ptr<AudioParam> resonance() const { return m_resonance; }
+    std::shared_ptr<AudioParam> drive() const { return m_drive; }
 
-    double in1, in2, in3, in4;
-    double out1, out2, out3, out4;
+    //double in1, in2, in3, in4;
+    //double out1, out2, out3, out4;
+
+
+    //double drive;
 
     void processMoogFilter(ContextRenderLock & r, int bufferSize, int offset, int count);
 
 protected:
+    double V[4];
+    double dV[4];
+    double tV[4];
+
+    double x;
+    double g;
+
     virtual double tailTime(ContextRenderLock & r) const override { return 0; }
     virtual double latencyTime(ContextRenderLock & r) const override { return 0; }
 
     std::shared_ptr<AudioParam> m_cutoff;
     std::shared_ptr<AudioParam> m_resonance;
+    std::shared_ptr<AudioParam> m_drive;
 
     AudioFloatArray m_sampleAccurateCutoffValues;
     AudioFloatArray m_sampleAccurateResonanceValues;
+    AudioFloatArray m_sampleAccurateDriveValues;
 };
 
 }  // namespace lab
