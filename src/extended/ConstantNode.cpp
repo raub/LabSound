@@ -63,27 +63,13 @@ void ConstantNode::processConstant(ContextRenderLock & r, int bufferSize, int of
         return;
     }
 
-    if (!isInitialized() || !input(0)->isConnected())
-    {
-        outputBus->zero();
-        return;
-    }
-
-    AudioBus * inputBus = input(0)->bus(r);
-    const int inputBusChannelCount = inputBus->numberOfChannels();
-    if (!inputBusChannelCount)
+    if (!isInitialized())
     {
         outputBus->zero();
         return;
     }
 
     int outputBusChannelCount = outputBus->numberOfChannels();
-    if (inputBusChannelCount != outputBusChannelCount)
-    {
-        output(0)->setNumberOfChannels(r, inputBusChannelCount);
-        outputBusChannelCount = inputBusChannelCount;
-        outputBus = output(0)->bus(r);
-    }
 
     if (bufferSize > m_sampleAccurateConstantValues.size()) m_sampleAccurateConstantValues.allocate(bufferSize);
 
@@ -101,7 +87,6 @@ void ConstantNode::processConstant(ContextRenderLock & r, int bufferSize, int of
     }
 
     float * destination = outputBus->channel(0)->mutableData() + offset;
-    const float * source = inputBus->channel(0)->data();
     const double sample_rate = (double) r.context()->sampleRate();
 
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
