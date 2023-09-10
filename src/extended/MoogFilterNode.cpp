@@ -32,13 +32,9 @@ MoogFilterNode::MoogFilterNode(AudioContext & ac)
     , m_sampleAccurateResonanceValues(AudioNode::ProcessingSizeInFrames)
     , m_sampleAccurateDriveValues(AudioNode::ProcessingSizeInFrames)
 {
-    //in1 = in2 = in3 = in4 = 0.0;
-    //out1 = out2 = out3 = out4 = 0.0;
-
     memset(V, 0, sizeof(V));
     memset(dV, 0, sizeof(dV));
     memset(tV, 0, sizeof(tV));
-    //drive = 1.0f;
 
     addInput(std::unique_ptr<AudioNodeInput>(new AudioNodeInput(this)));
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
@@ -142,6 +138,7 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
 
     double dV0, dV1, dV2, dV3;
     const double VT = 0.312; // Thermal voltage (26 milliwats at room temperature)
+    const double samplratex2 = 2.0 * sample_rate;
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
      {
         double cutoff = cutoffs[i];
@@ -149,47 +146,27 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
         g = 4.0 * M_PI * VT * cutoff * (1.0 - x) / (1.0 + x);
 
         dV0 = -g * (tanh((drives[i] * source[i] + resos[i] * V[3]) / (2.0 * VT)) + tV[0]);
-        V[0] += (dV0 + dV[0]) / (2.0 * sample_rate);
+        V[0] += (dV0 + dV[0]) / samplratex2;
         dV[0] = dV0;
         tV[0] = tanh(V[0] / (2.0 * VT));
 
         dV1 = g * (tV[0] - tV[1]);
-        V[1] += (dV1 + dV[1]) / (2.0 * sample_rate);
+        V[1] += (dV1 + dV[1]) / samplratex2;
         dV[1] = dV1;
         tV[1] = tanh(V[1] / (2.0 * VT));
 
         dV2 = g * (tV[1] - tV[2]);
-        V[2] += (dV2 + dV[2]) / (2.0 * sample_rate);
+        V[2] += (dV2 + dV[2]) / samplratex2;
         dV[2] = dV2;
         tV[2] = tanh(V[2] / (2.0 * VT));
 
         dV3 = g * (tV[2] - tV[3]);
-        V[3] += (dV3 + dV[3]) / (2.0 * sample_rate);
+        V[3] += (dV3 + dV[3]) / samplratex2;
         dV[3] = dV3;
         tV[3] = tanh(V[3] / (2.0 * VT));
 
         destination[i] = V[3];
 
-        //fc = cutoff, nearly linear[0, 1]->[0, fs / 2] 
-        //res = resonance[0, 4]->[no resonance, self - oscillation]
-
-        //double input = source[i];
-        //double fc = cutoffs[i];
-        //double res = resos[i];
-        //double f = fc * 1.16;
-        //double fb = res * (1.0 - 0.15 * f * f);
-
-        //input -= out4 * fb;
-        //input *= 0.35013 * (f * f) * (f * f);
-        //out1 = input + 0.3 * in1 + (1 - f) * out1; // Pole 1
-        //in1 = input;
-        //out2 = out1 + 0.3 * in2 + (1 - f) * out2;  // Pole 2
-        //in2 = out1;
-        //out3 = out2 + 0.3 * in3 + (1 - f) * out3;  // Pole 3
-        //in3 = out2;
-        //out4 = out3 + 0.3 * in4 + (1 - f) * out4;  // Pole 4
-        //in4 = out3;
-        //destination[i] = out4;
      }
 
      outputBus->clearSilentFlag();
@@ -197,8 +174,6 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
 
 void MoogFilterNode::reset(ContextRenderLock & r)
 {
-    //in1 = in2 = in3 = in4 = 0.0;
-    //out1 = out2 = out3 = out4 = 0.0;
      memset(V, 0, sizeof(V));
      memset(dV, 0, sizeof(dV));
      memset(tV, 0, sizeof(tV));

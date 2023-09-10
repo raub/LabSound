@@ -14,10 +14,9 @@ namespace lab
 
 class AudioContext;
 
-// GainNode is an AudioNode with one input and one output which applies a gain (volume) change to the audio signal.
-// De-zippering (smoothing) is applied when the gain value is changed dynamically.
+// Moog filter
 //
-// params: gain
+// params: cutoff, resonance, drive
 // settings:
 //
 class MoogFilterNode : public AudioNode
@@ -37,12 +36,6 @@ public:
     std::shared_ptr<AudioParam> cutoff() const { return m_cutoff; }
     std::shared_ptr<AudioParam> resonance() const { return m_resonance; }
     std::shared_ptr<AudioParam> drive() const { return m_drive; }
-
-    //double in1, in2, in3, in4;
-    //double out1, out2, out3, out4;
-
-
-    //double drive;
 
     void processMoogFilter(ContextRenderLock & r, int bufferSize, int offset, int count);
 
@@ -68,4 +61,4 @@ protected:
 
 }  // namespace lab
 
-#endif  // GainNode_h
+#endif  // MoogFilterNode_h
