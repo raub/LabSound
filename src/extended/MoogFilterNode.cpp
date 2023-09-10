@@ -142,6 +142,11 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
      {
         double cutoff = cutoffs[i];
+        if (cutoff < 1.0)
+        {
+            cutoff = 1.0;
+        }
+
         x = (M_PI * cutoff) / sample_rate;
         g = 4.0 * M_PI * VT * cutoff * (1.0 - x) / (1.0 + x);
 
