@@ -42,6 +42,10 @@ MoogFilterNode::MoogFilterNode(AudioContext & ac)
     m_cutoff = param("cutoff");
     m_resonance = param("resonance");
     m_drive = param("drive");
+
+	drive()->setValue(1.f);
+    cutoff()->setValue(4000.f);
+    resonance()->setValue(0.f);
     initialize();
 }
 
