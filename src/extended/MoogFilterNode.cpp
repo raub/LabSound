@@ -147,7 +147,7 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
             cutoff = 1.0;
         }
 
-        x = (M_PI * cutoff) / sample_rate;
+        x = (M_PI * cutoff) / (sample_rate*2.0);
         g = 4.0 * M_PI * VT * cutoff * (1.0 - x) / (1.0 + x);
 
         dV0 = -g * (tanh((drives[i] * source[i] + resos[i] * V[3]) / (2.0 * VT)) + tV[0]);
