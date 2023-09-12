@@ -67,12 +67,13 @@ public:
     double targetRatioDR;
     double output;
 
-    ADSRNodeImpl()
+    ADSRNodeImpl(float sample_rate)
         : AudioProcessor()
     {
         envelope.reserve(AudioNode::ProcessingSizeInFrames * 4);
         state = env_idle;
         output = 0;
+        cached_sample_rate = sample_rate;
     }
 
     virtual ~ADSRNodeImpl() { }
@@ -391,7 +392,7 @@ public:
 
 AnalogueADSRNode::AnalogueADSRNode(AudioContext & ac)
     : AudioNode(ac, *desc())
-    , adsr_impl(new ADSRNodeImpl)
+    , adsr_impl(new ADSRNodeImpl(ac.sampleRate()))
 {
     addInput(std::unique_ptr<AudioNodeInput>(new AudioNodeInput(this)));
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
