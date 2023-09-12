@@ -224,7 +224,7 @@ public:
 
         for (int i = 0; i < framesToProcess; ++i)
         {
-            if (_gateArray[i] && state != env_attack && state != env_decay && state != env_sustain)
+            if (_gateArray[i] && (state & (env_attack | env_decay | env_sustain)) == 0)
             {
                 output = 0.0;
                 state = env_attack;
