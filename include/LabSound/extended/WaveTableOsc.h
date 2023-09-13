@@ -80,7 +80,31 @@ public:
     //
     // UpdatePhase: Call once per sample
     //
-    void UpdatePhase(void)
+    void UpdatePhase(double mod)
+    {
+        mPhasor += (mPhaseInc * (1.f+mod));
+
+        if (mPhasor >= 1.0)
+            mPhasor -= 1.0;
+        // mPhasor -= floor(mPhasor);  // This will handle cases where mPhasor might exceed 2, 3, etc.
+        else if (mPhasor < 0.0)
+            mPhasor += 1.0;
+
+        if (mPhasor >= 1.0)
+        {
+            std::cout << "OVER 1" << std::endl;
+            mPhasor -= floor(mPhasor);
+        }
+        if (mPhasor < 0.0)
+        {
+            std::cout << "UNDER 0" << std::endl;
+            mPhasor = 1.0 - (-mPhasor - floor(-mPhasor));
+        }
+        // mPhasor = 1.0 - (-mPhasor - floor(-mPhasor));  // This will handle the negative phase wrap correctly
+    }
+
+
+    void UpdatePhase()
     {
         mPhasor += mPhaseInc;
 

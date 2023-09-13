@@ -11,7 +11,8 @@
 #include "LabSound/extended/AudioContextLock.h"
 #include "LabSound/extended/Registry.h"
 
-#include "internal/Assertions.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 namespace lab
 {
@@ -62,7 +63,7 @@ void MoogFilterNode::process(ContextRenderLock & r, int bufferSize)
 void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, int offset, int count)
 {
     AudioBus * outputBus = output(0)->bus(r);
-    ASSERT(outputBus);
+    //ASSERT(outputBus);
 
     int nonSilentFramesToProcess = count;
     if (!nonSilentFramesToProcess)

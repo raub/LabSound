@@ -269,14 +269,12 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         {
             double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
             const auto freq = frequencies[i] * detuneFactor;
-            //float modulatedFreq = freq + freq * ((phaseMods[i]) * phaseModDepths[i])
-            //float modulatedFreq = phaseMods[i] * phaseModDepths[i];
-            //modulatedFreq = std::abs(modulatedFreq);
+            float modulation = phaseMods[i] * phaseModDepths[i];
             float normalizedFrequency = freq / sample_rate;
             //float normalizedFrequency = freq / sample_rate;
             m_waveOsc->SetFrequency(normalizedFrequency);
             *destination++ = m_waveOsc->GetOutput();
-            m_waveOsc->UpdatePhase();
+            m_waveOsc->UpdatePhase(modulation);
         }
     };
 

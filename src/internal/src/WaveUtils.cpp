@@ -24,8 +24,8 @@
 //
 
 #include "LabSound/extended/WaveUtils.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
-#include "internal/Assertions.h"
 
 
 void fft(int N, double * ar, double * ai);
