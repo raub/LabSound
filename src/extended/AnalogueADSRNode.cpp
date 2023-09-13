@@ -41,6 +41,7 @@ AudioNodeDescriptor * AnalogueADSRNode::desc()
 class AnalogueADSRNode::ADSRNodeImpl : public lab::AudioProcessor
 {
 public:
+
     enum envState
     {
         env_idle = 0,
@@ -50,6 +51,7 @@ public:
         env_release
     };
     envState state;
+    ADSRMode mode;
     bool isReleaseCompleted = true;
     float cached_sample_rate = 48000.f;  // typical default
     struct LerpTarget
@@ -73,10 +75,16 @@ public:
         envelope.reserve(AudioNode::ProcessingSizeInFrames * 4);
         state = env_idle;
         output = 0;
+        mode = ADSR;
         cached_sample_rate = sample_rate;
     }
 
     virtual ~ADSRNodeImpl() { }
+
+    void setMode(ADSRMode m)
+    {
+        mode = m;
+    }
 
     inline double calcCoef(double rate, double targetRatio)
     {
@@ -163,6 +171,7 @@ public:
                 {
                     output = sustainLevel;
                     state = env_sustain;
+
                 }
                 break;
             }
@@ -225,82 +234,19 @@ public:
 
         for (int i = 0; i < framesToProcess; ++i)
         {
-            if (_gateArray[i] && (state & (env_attack | env_decay | env_sustain)) == 0)
+            if (_gateArray[i] && (state & (env_attack | env_decay)) == 0)
             {
                 output = 0.0;
                 state = env_attack;
                 isReleaseCompleted = false;
             }
             else if (_gateArray[i] <= 0 && state != env_idle)
-                state = env_release;
+            {
+                if (mode == ADSR)
+                    state = env_release;
+            }
 
             envelope[i] = processEnv();
-            
-
-            //if (_currentGate == 0 && _gateArray[i] > 0)
-            //{
-            //    // attack begin
-            //    isReleaseCompleted = false;
-            //    _currentGate = 1;
-            //    _lerp.clear();  // forget all previous lerps
-            //    float attackLevel = m_attackLevel->valueFloat();
-            //    float attackDelta = m_attackLevel->valueFloat() - currentEnvelope;
-            //    float attackRatio = attackDelta / attackLevel;
-            //    float attackSteps = m_attackTime->valueFloat() * attackRatio * cached_sample_rate;
-            //    float attackStepSize = attackDelta / attackSteps;
-
-            //    _lerp.emplace_back(LerpTarget {attackSteps, attackStepSize});
-
-            //    float sustainLevel = m_sustainLevel->valueFloat();
-            //    float decaySteps = m_decayTime->valueFloat() * cached_sample_rate;
-            //    float decayStepSize = (sustainLevel - attackLevel) / decaySteps;
-            //    _lerp.emplace_back(LerpTarget {decaySteps, decayStepSize});
-
-            //    if (!gate_is_connected || oneshot)
-            //    {
-            //        // if the gate is not connected, automate the sustain and release.
-            //        float sustainSteps = m_sustainTime->valueFloat() * cached_sample_rate;
-            //        _lerp.emplace_back(LerpTarget {sustainSteps, 0.f});
-            //        float releaseSteps = m_releaseTime->valueFloat() * cached_sample_rate;
-            //        _lerp.emplace_back(LerpTarget {releaseSteps, -sustainLevel / releaseSteps});
-            //    }
-            //    envelope[i] = currentEnvelope;
-            //}
-            //else if (_currentGate > 0 && _gateArray[i] == 0)
-            //{
-            //    // release begin
-            //    _currentGate = 0;
-            //    _lerp.clear();  // forget all previous lerps
-            //    float releaseSteps = m_releaseTime->valueFloat() * cached_sample_rate;
-            //    _lerp.emplace_back(LerpTarget {releaseSteps, -currentEnvelope / releaseSteps});
-            //    envelope[i] = currentEnvelope;
-            //}
-            //else
-            //{
-            //    bool assigned = false;
-            //    while (_lerp.size())
-            //    {
-            //        LerpTarget & front = _lerp.front();
-            //        if (front.t > 0)
-            //        {
-            //            currentEnvelope += front.dvdt;
-            //            envelope[i] = currentEnvelope;
-            //            front.t -= 1.f;
-            //            assigned = true;
-            //            break;
-            //        }
-            //        else
-            //        {
-            //            _lerp.pop_front();
-            //            if (this->m_gate->value() < 1)
-            //            {
-            //                isReleaseCompleted = true;
-            //            }
-            //        }
-            //    }
-            //    if (!assigned)
-            //        envelope[i] = currentEnvelope;
-            //}
         }
 
         destinationBus->copyWithSampleAccurateGainValuesFrom(*sourceBus, envelope.data(), framesToProcess);
@@ -327,76 +273,19 @@ public:
     std::shared_ptr<AudioSetting> m_sustainTime;
     std::shared_ptr<AudioSetting> m_sustainLevel;
     std::shared_ptr<AudioSetting> m_releaseTime;
-
-    // void ADSR::setAttackRate(double rate)
-    //{
-    //     attackRate = rate;
-
-    //}
-
-    // float decayCoef;
-    // float decayBase;
-
-    // void ADSR::setDecayRate(double rate)
-    //{
-    //     decayRate = rate;
-    //     decayCoef = calcCoef(rate, targetRatioDR);
-    //     decayBase = (sustainLevel - targetRatioDR) * (1.0 - decayCoef);
-    // }
-
-    // float releaseCoef;
-    // float releaseBase;
-
-    // void ADSR::setReleaseRate(double rate)
-    //{
-    //     releaseRate = rate;
-    //     releaseCoef = calcCoef(rate, targetRatioDR);
-    //     releaseBase = -targetRatioDR * (1.0 - releaseCoef);
-    // }
-
-    // double ADSR::calcCoef(double rate, double targetRatio)
-    //{
-    //     return (rate <= 0) ? 0.0 : exp(-log((1.0 + targetRatio) / targetRatio) / rate);
-    // }
-
-    // void ADSR::setSustainLevel(double level)
-    //{
-    //     sustainLevel = level;
-    //     decayBase = (sustainLevel - targetRatioDR) * (1.0 - decayCoef);
-    // }
-
-    // void ADSR::setTargetRatioA(double targetRatio)
-    //{
-    //     if (targetRatio < 0.000000001)
-    //         targetRatio = 0.000000001;  // -180 dB
-    //     targetRatioA = targetRatio;
-    //     attackCoef = calcCoef(attackRate, targetRatioA);
-    //     attackBase = (1.0 + targetRatioA) * (1.0 - attackCoef);
-    // }
-
-    // void ADSR::setTargetRatioDR(double targetRatio)
-    //{
-    //     if (targetRatio < 0.000000001)
-    //         targetRatio = 0.000000001;  // -180 dB
-    //     targetRatioDR = targetRatio;
-    //     decayCoef = calcCoef(decayRate, targetRatioDR);
-    //     releaseCoef = calcCoef(releaseRate, targetRatioDR);
-    //     decayBase = (sustainLevel - targetRatioDR) * (1.0 - decayCoef);
-    //     releaseBase = -targetRatioDR * (1.0 - releaseCoef);
-    // }
 };
 
-/////////////////////
-// Public ADSRNode //
-/////////////////////
+/////////////////////////////
+// Public AnalogueADSRNode //
+/////////////////////////////
 
-AnalogueADSRNode::AnalogueADSRNode(AudioContext & ac)
+AnalogueADSRNode::AnalogueADSRNode(AudioContext & ac, ADSRMode adsrMode)
     : AudioNode(ac, *desc())
     , adsr_impl(new ADSRNodeImpl(ac.sampleRate()))
 {
     addInput(std::unique_ptr<AudioNodeInput>(new AudioNodeInput(this)));
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
-
+    setMode(adsrMode);
     adsr_impl->m_gate = param("gate");
 
     adsr_impl->m_oneShot = setting("oneShot");
@@ -428,6 +317,10 @@ AnalogueADSRNode::~AnalogueADSRNode()
 {
     uninitialize();
     delete adsr_impl;
+}
+void AnalogueADSRNode::setMode(ADSRMode m)
+{
+    adsr_impl->setMode(m);
 }
 
 std::shared_ptr<AudioParam> AnalogueADSRNode::gate() const

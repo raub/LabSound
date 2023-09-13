@@ -18,7 +18,13 @@ class AnalogueADSRNode : public AudioNode
     ADSRNodeImpl * adsr_impl;
 
 public:
-    AnalogueADSRNode(AudioContext &);
+    enum ADSRMode
+    {
+        ADSR,
+        ADS
+    };
+
+    AnalogueADSRNode(AudioContext &, ADSRMode adsrMode = ADSR);
     virtual ~AnalogueADSRNode();
 
     static const char* static_name() { return "ADSR"; }
@@ -29,7 +35,7 @@ public:
     bool finished(ContextRenderLock &);
 
     void set(float attack_time, float attack_level, float decay_time, float sustain_time, float sustain_level, float release_time);
-
+    void setMode(ADSRMode m);
     virtual void process(ContextRenderLock& r, int bufferSize) override;
     virtual void reset(ContextRenderLock&) override;
     virtual double tailTime(ContextRenderLock& r) const override { return 0.; }
