@@ -278,7 +278,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         }
     };
 
-    if (type() == WaveTableWaveType::RECTANGLE || type() == WaveTableWaveType::SQUARE)
+    if (type() == WaveTableWaveType::SQUARE)
     {
         RenderSamplesMinusOffset();
     }

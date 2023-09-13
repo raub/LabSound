@@ -28,7 +28,6 @@ enum class WaveTableWaveType
     SINE,
     TRIANGLE,
     SQUARE,
-    RECTANGLE,
     SAWTOOTH,
     CUSTOM,
     _WavetableWaveCount
