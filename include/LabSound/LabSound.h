@@ -55,6 +55,7 @@
 #include "LabSound/extended/SpectralMonitorNode.h"
 #include "LabSound/extended/SupersawNode.h"
 #include "LabSound/extended/MoogFilterNode.h"
+#include "LabSound/extended/WaveTableOscillatorNode.h"
 
 #endif
 
