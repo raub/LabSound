@@ -15,7 +15,7 @@
 #include "internal/Assertions.h"
 #include "internal/AudioUtilities.h"
 #include "internal/VectorMath.h"
-
+#include <vector>
 #include <algorithm>
 
 using namespace lab;
@@ -80,6 +80,8 @@ AudioNodeDescriptor * WaveTableOscillatorNode::desc()
 //    squareOsc(),
 //    sawOsc()};
 
+
+
 WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
     : AudioScheduledSourceNode(ac, *desc()), 
       m_frequencyValues(AudioNode::ProcessingSizeInFrames),
@@ -88,6 +90,14 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
       m_phaseModValues(AudioNode::ProcessingSizeInFrames), 
       m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames)
 {
+    m_waveOscillators = {
+        sawOsc(),
+        sawOsc(),
+        sawOsc(),
+        sawOsc(),
+        sawOsc(),
+        sawOsc(),
+        sawOsc()};
 
         wavetable_cache = {
         sinOsc(),
@@ -278,6 +288,38 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         }
     };
 
+    auto RenderSuperSawSamples = [&]()
+    {
+        const int numOscillators = 7;  // For the central saw and 3 detuned saws on either side
+        float detuneAmounts[numOscillators] = {-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3};  // Example detuning amounts
+
+        for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
+        {
+            double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
+            const auto freq = frequencies[i] * detuneFactor;
+            float modulation = phaseMods[i] * phaseModDepths[i];
+            float sum = 0.0;
+
+            for (int osc = 0; osc < numOscillators; ++osc)
+            {
+                float detunedFrequency = freq + (detuneAmounts[osc]*0.1);
+                float normalizedFrequency = detunedFrequency / sample_rate;
+
+                m_waveOscillators[osc]->SetFrequency(normalizedFrequency);
+                sum += m_waveOscillators[osc]->GetOutput();
+                m_waveOscillators[osc]->UpdatePhase(modulation);
+            }
+
+            *destination++ = sum / numOscillators;  // Averaging the output of the saw oscillators
+        }
+    };
+
+
+    if (type() == WaveTableWaveType::SUPERSAW)
+    {
+        RenderSuperSawSamples();
+    }
+    else
     if (type() == WaveTableWaveType::SQUARE)
     {
         RenderSamplesMinusOffset();

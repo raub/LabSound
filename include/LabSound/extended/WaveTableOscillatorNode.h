@@ -29,6 +29,7 @@ enum class WaveTableWaveType
     TRIANGLE,
     SQUARE,
     SAWTOOTH,
+    SUPERSAW,
     CUSTOM,
     _WavetableWaveCount
 };
@@ -40,13 +41,14 @@ class WaveTableOscillatorNode : public AudioScheduledSourceNode
     virtual bool propagatesSilence(ContextRenderLock & r) const override;
     std::shared_ptr<AudioSetting> m_type;
     std::shared_ptr<WaveTableOsc> m_waveOsc;
+    
 
 public:
     WaveTableOscillatorNode(AudioContext & ac);
     virtual ~WaveTableOscillatorNode();
 
     std::vector<std::shared_ptr<WaveTableOsc>> wavetable_cache;
-
+    std::vector<std::shared_ptr<WaveTableOsc>> m_waveOscillators;
 
     static const char * static_name() { return "WavetableOscillator"; }
     virtual const char * name() const override { return static_name(); }
