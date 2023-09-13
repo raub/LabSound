@@ -22,6 +22,8 @@
 #ifndef WaveTableOsc_h
 #define WaveTableOsc_h
 
+#include <iostream>
+
 class WaveTableOsc
 {
 public:
@@ -62,6 +64,7 @@ public:
         while ((mPhaseInc >= mWaveTables[curWaveTable].topFreq) && (curWaveTable < (mNumWaveTables - 1)))
         {
             ++curWaveTable;
+            
         }
         mCurWaveTable = curWaveTable;
     }

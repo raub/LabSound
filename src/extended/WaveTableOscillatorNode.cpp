@@ -232,13 +232,22 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
     float * destination = outputBus->channel(0)->mutableData() + offset;
     //polyblep->setWaveform(static_cast<PolyBLEPType>(m_type->valueUint32()));
 
+    //float lastFreq = -1;
     auto RenderSamplesMinusOffset = [&]() {
+        
         for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
         {
             // Update the PolyBlepImpl's frequency for each sample
             double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
-            float normalizedFrequency = (frequencies[i] * detuneFactor) / sample_rate;
-            m_waveOsc->SetFrequency(normalizedFrequency);
+            const auto freq = frequencies[i] * detuneFactor;
+            //if (freq != lastFreq)
+            //{
+                float normalizedFrequency = freq / sample_rate;
+
+                m_waveOsc->SetFrequency(normalizedFrequency);
+                //lastFreq = freq;
+            //}
+            
             m_waveOsc->SetPhaseOffset(pulseWidths[i]);
             *destination++ = m_waveOsc->GetOutputMinusOffset();
             m_waveOsc->UpdatePhase();
@@ -250,8 +259,13 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         {
             // Update the PolyBlepImpl's frequency for each sample
             double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
-            float normalizedFrequency = (frequencies[i] * detuneFactor) / sample_rate;
-            m_waveOsc->SetFrequency(normalizedFrequency);
+            const auto freq = frequencies[i] * detuneFactor;
+            //if (freq != lastFreq)
+            //{
+                float normalizedFrequency = freq / sample_rate;
+                m_waveOsc->SetFrequency(normalizedFrequency);
+                //lastFreq = freq;
+            //}
             *destination++ = m_waveOsc->GetOutput();
             m_waveOsc->UpdatePhase();
         }

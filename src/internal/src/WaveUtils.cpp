@@ -232,7 +232,6 @@ std::shared_ptr<WaveTableOsc> sinOsc(void)
         freqWaveIm[idx] = freqWaveRe[idx] = 0.0;
     }
     freqWaveIm[1] = 1;
-    freqWaveIm[tableLen >> 1+1] = -1;  
 
     // build a wavetable oscillator
     auto osc = std::make_shared<WaveTableOsc>();
@@ -242,39 +241,6 @@ std::shared_ptr<WaveTableOsc> sinOsc(void)
     delete[] freqWaveIm;
     return osc;
 }
-
-std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webImag, int webLength)
-{
-    int tableLen = 2048;
-    double * freqWaveRe = new double[tableLen];
-    double * freqWaveIm = new double[tableLen];
-
-    // Initialize arrays to zeros
-    for (int idx = 0; idx < tableLen; idx++)
-    {
-        freqWaveRe[idx] = 0.0;
-        freqWaveIm[idx] = 0.0;
-    }
-
-    // Spread the coefficients from Web Audio API format to WaveTableOsc format
-    for (int idx = 0; idx < webLength && idx < (tableLen >> 1); idx++)
-    {
-        //int targetIndex = idx * (tableLen / (2 * webLength));
-        freqWaveRe[idx] = webImag[idx];
-        freqWaveIm[idx] = webReal[idx];
-        freqWaveRe[tableLen - idx] = -freqWaveIm[idx];
-        //freqWaveRe[tableLen - idx] = freqWaveRe[idx];  // mirror for negative frequencies
-        //freqWaveIm[tableLen - idx] = -freqWaveIm[idx];  // mirror for negative frequencies (and invert phase)
-    }
-
-    auto osc = std::make_shared<WaveTableOsc>();
-    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
-
-    delete[] freqWaveRe;
-    delete[] freqWaveIm;
-    return osc;
-}
-
 
 std::shared_ptr<WaveTableOsc> richTriangleOsc(void)
 {
