@@ -138,7 +138,6 @@ void WaveTableOscillatorNode::setType(WaveTableWaveType type)
             break;
     }
     m_type->setUint32(static_cast<uint32_t>(type));
-    
 }
 
 void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count)
@@ -233,22 +232,40 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
     float * destination = outputBus->channel(0)->mutableData() + offset;
     //polyblep->setWaveform(static_cast<PolyBLEPType>(m_type->valueUint32()));
 
-    for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
-    {
-        // Update the PolyBlepImpl's frequency for each sample
-        double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
-        float normalizedFrequency = (frequencies[i] * detuneFactor) / sample_rate;
-        m_waveOsc->SetFrequency(normalizedFrequency);
+    auto RenderSamplesMinusOffset = [&]() {
+        for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
+        {
+            // Update the PolyBlepImpl's frequency for each sample
+            double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
+            float normalizedFrequency = (frequencies[i] * detuneFactor) / sample_rate;
+            m_waveOsc->SetFrequency(normalizedFrequency);
+            m_waveOsc->SetPhaseOffset(pulseWidths[i]);
+            *destination++ = m_waveOsc->GetOutputMinusOffset();
+            m_waveOsc->UpdatePhase();
+        }
+    };
 
-        // Update the PolyBlepImpl's frequency for each sample
-        //polyblep->setFrequency(frequencies[i] * detuneFactor);
-        //polyblep->setPulseWidth(pulseWidths[i]);
-        //polyblep->setPhaseMod(phaseMods[i]);
-        //polyblep->setPhaseModDepth(phaseModDepths[i]);
-        //destination[i] = (amplitudes[i] * static_cast<float>(polyblep->getPhaseAndIncrement()));
-        *destination++ = m_waveOsc->GetOutput();
-        m_waveOsc->UpdatePhase();
+    auto RenderSamples = [&]() {
+        for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
+        {
+            // Update the PolyBlepImpl's frequency for each sample
+            double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
+            float normalizedFrequency = (frequencies[i] * detuneFactor) / sample_rate;
+            m_waveOsc->SetFrequency(normalizedFrequency);
+            *destination++ = m_waveOsc->GetOutput();
+            m_waveOsc->UpdatePhase();
+        }
+    };
+
+    if (type() == WaveTableWaveType::RECTANGLE || type() == WaveTableWaveType::SQUARE)
+    {
+        RenderSamplesMinusOffset();
     }
+    else
+    {
+        RenderSamples();
+    }
+    
 
     outputBus->clearSilentFlag();
 }
