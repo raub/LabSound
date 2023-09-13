@@ -17,6 +17,12 @@ float makeWaveTable(WaveTableOsc * osc, int len, double * ar, double * ai, doubl
 
 // examples
 std::shared_ptr<WaveTableOsc> sawOsc(void);
-WaveTableOsc * waveOsc(double * waveSamples, int tableLen);
+std::shared_ptr<WaveTableOsc> sinOsc(void);
+std::shared_ptr<WaveTableOsc> squareOsc(void);
+std::shared_ptr<WaveTableOsc> triangleOsc(void);
+std::shared_ptr<WaveTableOsc> richTriangleOsc(void);
+std::shared_ptr<WaveTableOsc> noiseOsc(void);
+    std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webImag, int webLength);
+    WaveTableOsc * waveOsc(double * waveSamples, int tableLen);
 
 #endif

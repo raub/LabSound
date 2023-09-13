@@ -83,7 +83,10 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
       m_phaseModValues(AudioNode::ProcessingSizeInFrames), 
       m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames)
 {
-    m_waveOsc = sawOsc();
+    
+    //float real[2] = {0, 1};
+    //float imag[2] = {0, 0};
+    //m_waveOsc = convertFromWebAudio(real, imag, 2);
     m_type = setting("type");
     m_frequency = param("frequency");
     m_detune = param("detune");
@@ -119,7 +122,23 @@ WaveTableWaveType WaveTableOscillatorNode::type() const
 
 void WaveTableOscillatorNode::setType(WaveTableWaveType type)
 {
+    switch (type)
+    {
+        case WaveTableWaveType::SINE:
+            m_waveOsc = sinOsc();
+            break;
+        case WaveTableWaveType::TRIANGLE:
+            m_waveOsc = triangleOsc();
+            break;
+        case WaveTableWaveType::SQUARE:
+            m_waveOsc = squareOsc();
+            break;
+        case WaveTableWaveType::SAWTOOTH:
+            m_waveOsc = sawOsc();
+            break;
+    }
     m_type->setUint32(static_cast<uint32_t>(type));
+    
 }
 
 void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count)

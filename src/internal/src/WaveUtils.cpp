@@ -178,6 +178,208 @@ std::shared_ptr<WaveTableOsc> sawOsc(void)
     return osc;
 }
 
+std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webImag, int webLength, int tableLen = 2048)
+{
+    double * freqWaveRe = new double[tableLen];
+    double * freqWaveIm = new double[tableLen];
+
+    // Initialize arrays to zeros
+    for (int idx = 0; idx < tableLen; idx++)
+    {
+        freqWaveRe[idx] = 0.0;
+        freqWaveIm[idx] = 0.0;
+    }
+
+    // Copy the DC and Nyquist components
+    freqWaveRe[0] = webReal[0];
+    freqWaveIm[0] = webImag[0];
+    if (webLength > 1)
+    {
+        freqWaveRe[tableLen >> 1] = webReal[1];
+        freqWaveIm[tableLen >> 1] = webImag[1];
+    }
+
+    // Set the remaining harmonics, ensuring we don't overrun the length of the provided Web Audio API arrays
+    for (int idx = 1; idx < std::min((tableLen >> 1), webLength); idx++)
+    {
+        freqWaveRe[idx] = webReal[idx];
+        freqWaveIm[idx] = webImag[idx];
+
+        // Mirror for negative frequencies, and invert the phase
+        freqWaveRe[tableLen - idx] = webReal[idx];
+        freqWaveIm[tableLen - idx] = -webImag[idx];
+    }
+
+    auto osc = std::make_shared<WaveTableOsc>();
+    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
+
+    delete[] freqWaveRe;
+    delete[] freqWaveIm;
+    return osc;
+}
+
+std::shared_ptr<WaveTableOsc> sinOsc(void)
+{
+    int tableLen = 2048;  // to give full bandwidth from 20 Hz
+    int idx;
+    double * freqWaveRe = new double[tableLen];
+    double * freqWaveIm = new double[tableLen];
+
+    // make a sine wave
+    // DC and Nyquist are zero for sine
+    for (idx = 0; idx < tableLen; idx++)
+    {
+        freqWaveIm[idx] = freqWaveRe[idx] = 0.0;
+    }
+    freqWaveIm[1] = 1;
+    freqWaveIm[tableLen >> 1+1] = -1;  
+
+    // build a wavetable oscillator
+    auto osc = std::make_shared<WaveTableOsc>();
+    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
+
+    delete[] freqWaveRe;
+    delete[] freqWaveIm;
+    return osc;
+}
+
+std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webImag, int webLength)
+{
+    int tableLen = 2048;
+    double * freqWaveRe = new double[tableLen];
+    double * freqWaveIm = new double[tableLen];
+
+    // Initialize arrays to zeros
+    for (int idx = 0; idx < tableLen; idx++)
+    {
+        freqWaveRe[idx] = 0.0;
+        freqWaveIm[idx] = 0.0;
+    }
+
+    // Spread the coefficients from Web Audio API format to WaveTableOsc format
+    for (int idx = 0; idx < webLength && idx < (tableLen >> 1); idx++)
+    {
+        //int targetIndex = idx * (tableLen / (2 * webLength));
+        freqWaveRe[idx] = webImag[idx];
+        freqWaveIm[idx] = webReal[idx];
+        freqWaveRe[tableLen - idx] = -freqWaveIm[idx];
+        //freqWaveRe[tableLen - idx] = freqWaveRe[idx];  // mirror for negative frequencies
+        //freqWaveIm[tableLen - idx] = -freqWaveIm[idx];  // mirror for negative frequencies (and invert phase)
+    }
+
+    auto osc = std::make_shared<WaveTableOsc>();
+    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
+
+    delete[] freqWaveRe;
+    delete[] freqWaveIm;
+    return osc;
+}
+
+
+std::shared_ptr<WaveTableOsc> richTriangleOsc(void)
+{
+    int tableLen = 2048;
+    int idx;
+    double * freqWaveRe = new double[tableLen];
+    double * freqWaveIm = new double[tableLen];
+
+    // Initialize arrays to zeros
+    for (idx = 0; idx < tableLen; idx++)
+    {
+        freqWaveRe[idx] = 0.0;
+        freqWaveIm[idx] = 0.0;
+    }
+
+    // Generate triangle wave using its Fourier expansion
+    for (idx = 1; idx <= (tableLen >> 1); idx += 2)
+    {
+        freqWaveRe[idx] = (idx % 4 == 1) ? (1.0 / (idx * idx)) : (-1.0 / (idx * idx));
+    }
+
+    // Add some harmonics of the sawtooth wave for a richer sound.
+    // We're adding the 5th, 7th, and 9th harmonics.
+    int harmonic;
+    harmonic = 5;
+    freqWaveIm[harmonic] = 0.2;
+    freqWaveIm[tableLen - harmonic] = -freqWaveIm[harmonic];
+
+    harmonic = 7;
+    freqWaveIm[harmonic] = 0.15;
+    freqWaveIm[tableLen - harmonic] = -freqWaveIm[harmonic];
+
+    harmonic = 9;
+    freqWaveIm[harmonic] = 0.1;
+    freqWaveIm[tableLen - harmonic] = -freqWaveIm[harmonic];
+
+    auto osc = std::make_shared<WaveTableOsc>();
+    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
+
+    delete[] freqWaveRe;
+    delete[] freqWaveIm;
+    return osc;
+}
+
+
+// Triangle wave oscillator
+std::shared_ptr<WaveTableOsc> triangleOsc(void)
+{
+    int tableLen = 2048;
+    int idx;
+    double * freqWaveRe = new double[tableLen];
+    double * freqWaveIm = new double[tableLen];
+
+    // Initialize arrays to zeros
+    for (idx = 0; idx < tableLen; idx++)
+    {
+        freqWaveRe[idx] = 0.0;
+        freqWaveIm[idx] = 0.0;
+    }
+
+    // Generate triangle wave using its Fourier expansion
+    for (idx = 1; idx <= (tableLen >> 1); idx += 2)
+    {
+        freqWaveRe[idx] = (idx % 4 == 1) ? (1.0 / (idx * idx)) : (-1.0 / (idx * idx));
+        freqWaveRe[tableLen - idx] = -freqWaveIm[idx];  // mirror for negative frequencies
+    }
+
+    auto osc = std::make_shared<WaveTableOsc>();
+    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
+
+    delete[] freqWaveRe;
+    delete[] freqWaveIm;
+    return osc;
+}
+
+// Square wave oscillator
+std::shared_ptr<WaveTableOsc> squareOsc(void)
+{
+    int tableLen = 2048;
+    int idx;
+    double * freqWaveRe = new double[tableLen];
+    double * freqWaveIm = new double[tableLen];
+
+    // Initialize arrays to zeros
+    for (idx = 0; idx < tableLen; idx++)
+    {
+        freqWaveRe[idx] = 0.0;
+        freqWaveIm[idx] = 0.0;
+    }
+
+    // Generate square wave using its Fourier expansion
+    for (idx = 1; idx <= (tableLen >> 1); idx += 2)
+    {
+        freqWaveRe[idx] = 1.0 / idx;
+        freqWaveRe[tableLen - idx] = -freqWaveRe[idx];  // mirror for negative frequencies
+    }
+
+    auto osc = std::make_shared<WaveTableOsc>();
+    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
+
+    delete[] freqWaveRe;
+    delete[] freqWaveIm;
+    return osc;
+}
+
 //
 // example that creates an oscillator from an arbitrary time domain wave
 //
