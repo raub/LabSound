@@ -137,7 +137,9 @@ public:
             });
 
         m_releaseTime->setValueChanged([&]{
-            const float rate = m_releaseTime->valueFloat() * cached_sample_rate;
+            float rate = m_releaseTime->valueFloat() * cached_sample_rate;
+            if (mode == ADS)
+                rate = 99999.0;
             this->releaseCoef = calcCoef(rate, targetRatioDR);
             this->releaseBase = -targetRatioDR * (1.0 - releaseCoef); 
             });
@@ -234,7 +236,7 @@ public:
 
         for (int i = 0; i < framesToProcess; ++i)
         {
-            if (_gateArray[i] && (state & (env_attack | env_decay)) == 0)
+            if (_gateArray[i] && (state & (env_attack | env_decay | env_sustain)) == 0)
             {
                 output = 0.0;
                 state = env_attack;
@@ -242,8 +244,10 @@ public:
             }
             else if (_gateArray[i] <= 0 && state != env_idle)
             {
-                if (mode == ADSR)
+                //if (mode == ADSR)
                     state = env_release;
+                //else
+                    //state = env_idle;
             }
 
             envelope[i] = processEnv();
