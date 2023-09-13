@@ -74,6 +74,11 @@ AudioNodeDescriptor * WaveTableOscillatorNode::desc()
     static AudioNodeDescriptor d {s_waveTableParams, s_pbSettings};
     return &d;
 }
+//std::shared_ptr<WaveTableOsc> WaveTableOscillatorNode::wavetable_cache[] = {
+//    sinOsc(),
+//    triangleOsc(),
+//    squareOsc(),
+//    sawOsc()};
 
 WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
     : AudioScheduledSourceNode(ac, *desc()), 
@@ -83,10 +88,13 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
       m_phaseModValues(AudioNode::ProcessingSizeInFrames), 
       m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames)
 {
+
+        wavetable_cache = {
+        sinOsc(),
+        triangleOsc(),
+        squareOsc(),
+        sawOsc()};
     
-    //float real[2] = {0, 1};
-    //float imag[2] = {0, 0};
-    //m_waveOsc = convertFromWebAudio(real, imag, 2);
     m_type = setting("type");
     m_frequency = param("frequency");
     m_detune = param("detune");
@@ -105,7 +113,6 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
 
     // An oscillator is always mono.
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
-
     setType(WaveTableWaveType::SINE);
     initialize();
 }
@@ -125,16 +132,20 @@ void WaveTableOscillatorNode::setType(WaveTableWaveType type)
     switch (type)
     {
         case WaveTableWaveType::SINE:
-            m_waveOsc = sinOsc();
+    //        m_waveOsc = sinOsc();
+            m_waveOsc = wavetable_cache[0];
             break;
         case WaveTableWaveType::TRIANGLE:
-            m_waveOsc = triangleOsc();
+            m_waveOsc = wavetable_cache[1];
+            //m_waveOsc = triangleOsc();
             break;
         case WaveTableWaveType::SQUARE:
-            m_waveOsc = squareOsc();
+            m_waveOsc = wavetable_cache[2];
+    //        m_waveOsc = squareOsc();
             break;
         case WaveTableWaveType::SAWTOOTH:
-            m_waveOsc = sawOsc();
+            m_waveOsc = wavetable_cache[3];
+    //        m_waveOsc = sawOsc();
             break;
     }
     m_type->setUint32(static_cast<uint32_t>(type));
@@ -150,7 +161,6 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
     }
 
     const float sample_rate = r.context()->sampleRate();
-    //polyblep->setSampleRate(sample_rate);
 
     int nonSilentFramesToProcess = count;
 
@@ -257,15 +267,14 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
     auto RenderSamples = [&]() {
         for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
         {
-            // Update the PolyBlepImpl's frequency for each sample
             double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
             const auto freq = frequencies[i] * detuneFactor;
-            //if (freq != lastFreq)
-            //{
-                float normalizedFrequency = freq / sample_rate;
-                m_waveOsc->SetFrequency(normalizedFrequency);
-                //lastFreq = freq;
-            //}
+            //float modulatedFreq = freq + freq * ((phaseMods[i]) * phaseModDepths[i])
+            //float modulatedFreq = phaseMods[i] * phaseModDepths[i];
+            //modulatedFreq = std::abs(modulatedFreq);
+            float normalizedFrequency = freq / sample_rate;
+            //float normalizedFrequency = freq / sample_rate;
+            m_waveOsc->SetFrequency(normalizedFrequency);
             *destination++ = m_waveOsc->GetOutput();
             m_waveOsc->UpdatePhase();
         }

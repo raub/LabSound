@@ -46,6 +46,9 @@ public:
     WaveTableOscillatorNode(AudioContext & ac);
     virtual ~WaveTableOscillatorNode();
 
+    std::vector<std::shared_ptr<WaveTableOsc>> wavetable_cache;
+
+
     static const char * static_name() { return "WavetableOscillator"; }
     virtual const char * name() const override { return static_name(); }
     static AudioNodeDescriptor * desc();
