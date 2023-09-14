@@ -24,6 +24,7 @@
 //
 
 #include "LabSound/extended/WaveUtils.h"
+#include "LabSound/extended/WaveTableOsc.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -39,7 +40,7 @@ float makeWaveTable(WaveTableOsc * osc, int len, double * ar, double * ai, doubl
 // all wavetables necessary for full-bandwidth operation, based on one table per octave,
 // and returns the number of tables.
 //
-int fillTables(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, int numSamples)
+int fillTables(WaveTableMemory * mem, double * freqWaveRe, double * freqWaveIm, int numSamples)
 {
     int idx;
 
@@ -76,7 +77,7 @@ int fillTables(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, int
         }
 
         // make the wavetable
-        scale = makeWaveTable(osc, numSamples, ar, ai, scale, topFreq);
+        scale = makeWaveTable(mem, numSamples, ar, ai, scale, topFreq);
         numTables++;
 
         // prepare for next table
@@ -99,7 +100,7 @@ int fillTables(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, int
 // The function fills the oscillator with all wavetables necessary for full-bandwidth operation,
 // based on the criteria, and returns the number of tables.
 //
-int fillTables2(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, int numSamples, double minTop, double maxTop)
+int fillTables2(WaveTableMemory * mem, double * freqWaveRe, double * freqWaveIm, int numSamples, double minTop, double maxTop)
 {
     // if top not set, assume aliasing is allowed down to minTop
     if (maxTop == 0.0)
@@ -135,7 +136,7 @@ int fillTables2(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, in
         }
 
         // make the wavetable
-        scale = makeWaveTable(osc, numSamples, ar, ai, scale, topFreq);
+        scale = makeWaveTable(mem, numSamples, ar, ai, scale, topFreq);
         numTables++;
 
         // topFreq is new base frequency, so figure how many harmonics will fit within maxTop
@@ -150,7 +151,7 @@ int fillTables2(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, in
 //
 // example that builds a sawtooth oscillator via frequency domain
 //
-std::shared_ptr<WaveTableOsc> sawOsc(void)
+std::shared_ptr<WaveTableMemory> sawOsc(void)
 {
     int tableLen = 2048;  // to give full bandwidth from 20 Hz
     int idx;
@@ -170,7 +171,7 @@ std::shared_ptr<WaveTableOsc> sawOsc(void)
     }
 
     // build a wavetable oscillator
-    auto osc = std::make_shared<WaveTableOsc>();
+    auto osc = std::make_shared<WaveTableMemory>();
     fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
 
     delete[] freqWaveRe;
@@ -178,7 +179,7 @@ std::shared_ptr<WaveTableOsc> sawOsc(void)
     return osc;
 }
 
-std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webImag, int webLength, int tableLen = 2048)
+std::shared_ptr<WaveTableMemory> convertFromWebAudio(float * webReal, float * webImag, int webLength, int tableLen = 2048)
 {
     double * freqWaveRe = new double[tableLen];
     double * freqWaveIm = new double[tableLen];
@@ -210,7 +211,7 @@ std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webIm
         freqWaveIm[tableLen - idx] = -webImag[idx];
     }
 
-    auto osc = std::make_shared<WaveTableOsc>();
+    auto osc = std::make_shared<WaveTableMemory>();
     fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
 
     delete[] freqWaveRe;
@@ -218,7 +219,7 @@ std::shared_ptr<WaveTableOsc> convertFromWebAudio(float * webReal, float * webIm
     return osc;
 }
 
-std::shared_ptr<WaveTableOsc> sinOsc(void)
+std::shared_ptr<WaveTableMemory> sinOsc(void)
 {
     int tableLen = 2048;  // to give full bandwidth from 20 Hz
     int idx;
@@ -234,60 +235,16 @@ std::shared_ptr<WaveTableOsc> sinOsc(void)
     freqWaveIm[1] = 1;
 
     // build a wavetable oscillator
-    auto osc = std::make_shared<WaveTableOsc>();
+    auto osc = std::make_shared<WaveTableMemory>();
     fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
 
     delete[] freqWaveRe;
     delete[] freqWaveIm;
     return osc;
 }
-
-std::shared_ptr<WaveTableOsc> richTriangleOsc(void)
-{
-    int tableLen = 2048;
-    int idx;
-    double * freqWaveRe = new double[tableLen];
-    double * freqWaveIm = new double[tableLen];
-
-    // Initialize arrays to zeros
-    for (idx = 0; idx < tableLen; idx++)
-    {
-        freqWaveRe[idx] = 0.0;
-        freqWaveIm[idx] = 0.0;
-    }
-
-    // Generate triangle wave using its Fourier expansion
-    for (idx = 1; idx <= (tableLen >> 1); idx += 2)
-    {
-        freqWaveRe[idx] = (idx % 4 == 1) ? (1.0 / (idx * idx)) : (-1.0 / (idx * idx));
-    }
-
-    // Add some harmonics of the sawtooth wave for a richer sound.
-    // We're adding the 5th, 7th, and 9th harmonics.
-    int harmonic;
-    harmonic = 5;
-    freqWaveIm[harmonic] = 0.2;
-    freqWaveIm[tableLen - harmonic] = -freqWaveIm[harmonic];
-
-    harmonic = 7;
-    freqWaveIm[harmonic] = 0.15;
-    freqWaveIm[tableLen - harmonic] = -freqWaveIm[harmonic];
-
-    harmonic = 9;
-    freqWaveIm[harmonic] = 0.1;
-    freqWaveIm[tableLen - harmonic] = -freqWaveIm[harmonic];
-
-    auto osc = std::make_shared<WaveTableOsc>();
-    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
-
-    delete[] freqWaveRe;
-    delete[] freqWaveIm;
-    return osc;
-}
-
 
 // Triangle wave oscillator
-std::shared_ptr<WaveTableOsc> triangleOsc(void)
+std::shared_ptr<WaveTableMemory> triangleOsc(void)
 {
     int tableLen = 2048;
     int idx;
@@ -308,7 +265,7 @@ std::shared_ptr<WaveTableOsc> triangleOsc(void)
         freqWaveRe[tableLen - idx] = -freqWaveIm[idx];  // mirror for negative frequencies
     }
 
-    auto osc = std::make_shared<WaveTableOsc>();
+    auto osc = std::make_shared<WaveTableMemory>();
     fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
 
     delete[] freqWaveRe;
@@ -317,7 +274,7 @@ std::shared_ptr<WaveTableOsc> triangleOsc(void)
 }
 
 // Square wave oscillator
-std::shared_ptr<WaveTableOsc> squareOsc(void)
+std::shared_ptr<WaveTableMemory> squareOsc(void)
 {
     int tableLen = 2048;
     int idx;
@@ -338,7 +295,7 @@ std::shared_ptr<WaveTableOsc> squareOsc(void)
         freqWaveRe[tableLen - idx] = -freqWaveRe[idx];  // mirror for negative frequencies
     }
 
-    auto osc = std::make_shared<WaveTableOsc>();
+    auto osc = std::make_shared<WaveTableMemory>();
     fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
 
     delete[] freqWaveRe;
@@ -349,7 +306,7 @@ std::shared_ptr<WaveTableOsc> squareOsc(void)
 //
 // example that creates an oscillator from an arbitrary time domain wave
 //
-WaveTableOsc * waveOsc(double * waveSamples, int tableLen, double samplerate)
+WaveTableMemory * waveOsc(double * waveSamples, int tableLen, double samplerate)
 {
     int idx;
     double * freqWaveRe = new double[tableLen];
@@ -366,7 +323,7 @@ WaveTableOsc * waveOsc(double * waveSamples, int tableLen, double samplerate)
     // build a wavetable oscillator
 
 
-    WaveTableOsc * osc = new WaveTableOsc();
+    WaveTableMemory * osc = new WaveTableMemory();
 
 // minTop: the minimum normalized frequency that all wave tables support
     //      ex.: 18000/44100.0 ensures harmonics out to 18k (44.1kHz sample rate) at minimum
@@ -388,7 +345,7 @@ WaveTableOsc * waveOsc(double * waveSamples, int tableLen, double samplerate)
 // if scale is 0, auto-scales
 // returns scaling factor (0.0 if failure), and wavetable in ai array
 //
-float makeWaveTable(WaveTableOsc * osc, int len, double * ar, double * ai, double scale, double topFreq)
+float makeWaveTable(WaveTableMemory * mem, int len, double * ar, double * ai, double scale, double topFreq)
 {
     fft(len, ar, ai);
 
@@ -410,7 +367,7 @@ float makeWaveTable(WaveTableOsc * osc, int len, double * ar, double * ai, doubl
     for (int idx = 0; idx < len; idx++)
         wave[idx] = ai[idx] * scale;
 
-    if (osc->AddWaveTable(len, wave, topFreq))
+    if (mem->AddWaveTable(len, wave, topFreq))
         scale = 0.0;
 
     delete[] wave;

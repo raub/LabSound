@@ -23,27 +23,113 @@
 #define WaveTableOsc_h
 
 #include <iostream>
+#include <vector>
+#include <map>
+#include <string>
+#include "LabSound/extended/WaveUtils.h"
 
-class WaveTableOsc
+struct WaveTableMemory
 {
-public:
-    WaveTableOsc(void)
+    struct waveTable
+    {
+        double topFreq;
+        int waveTableLen;
+        std::vector<float> waveTable;
+    };
+    static constexpr int numWaveTableSlots = 40;  // simplify allocation with reasonable maximum
+    waveTable mWaveTables[numWaveTableSlots];
+    int mNumWaveTables = 0;  // number of wavetable slots in use
+
+    WaveTableMemory()
     {
         for (int idx = 0; idx < numWaveTableSlots; idx++)
         {
             mWaveTables[idx].topFreq = 0;
             mWaveTables[idx].waveTableLen = 0;
-            mWaveTables[idx].waveTable = 0;
+            // mWaveTables[idx].waveTable = 0;
         }
+    }
+
+    //
+    // AddWaveTable
+    //
+    // add wavetables in order of lowest frequency to highest
+    // topFreq is the highest frequency supported by a wavetable
+    // wavetables within an oscillator can be different lengths
+    //
+    // returns 0 upon success, or the number of wavetables if no more room is available
+    //
+    int AddWaveTable(int len, float * waveTableIn, double topFreq)
+    {
+        if (mNumWaveTables < numWaveTableSlots)
+        {
+            mWaveTables[mNumWaveTables].waveTable.resize(len+1);// = new float[len + 1];
+            float * waveTable = mWaveTables[mNumWaveTables].waveTable.data();  
+            mWaveTables[mNumWaveTables].waveTableLen = len-1;
+            mWaveTables[mNumWaveTables].topFreq = topFreq;
+            ++mNumWaveTables;
+
+            // fill in wave
+            for (long idx = 0; idx < len; idx++)
+                waveTable[idx] = waveTableIn[idx];
+            waveTable[len] = waveTable[0];  // duplicate for interpolation wraparound
+
+            return 0;
+        }
+        return mNumWaveTables;
+    }
+};
+
+class WaveTableBank
+{
+public:
+    WaveTableBank()
+    {
+        addWave("sine", sinOsc());
+        addWave("triangle", triangleOsc());
+        addWave("square", squareOsc());
+        addWave("saw", sawOsc());
+    }
+
+    std::map<std::string, std::shared_ptr<WaveTableMemory>> m_waves;
+
+    void addWave(const std::string & name, std::shared_ptr<WaveTableMemory> waveMem)
+    {
+        if (m_waves.find(name) != m_waves.end())
+        {
+            throw std::runtime_error("wave memory by that name already exists");
+        }
+
+        m_waves[name] = waveMem;
+    }
+
+    std::shared_ptr<WaveTableMemory> getWave(const std::string name)
+    {
+        auto wave = m_waves.find(name);
+        if (wave == m_waves.end())
+            return nullptr;
+        return wave->second;
+    }
+};
+
+
+class WaveTableOsc
+{
+public:
+    static WaveTableBank bank;
+    std::shared_ptr<WaveTableMemory> waveMem;
+    WaveTableOsc(const std::string& name)
+    {
+        waveMem = bank.getWave(name);
     }
     ~WaveTableOsc(void)
     {
-        for (int idx = 0; idx < numWaveTableSlots; idx++)
-        {
-            float * temp = mWaveTables[idx].waveTable;
-            if (temp != 0)
-                delete[] temp;
-        }
+        //for (int idx = 0; idx < numWaveTableSlots; idx++)
+        //{
+        //    float * temp = mWaveTables[idx].waveTable;
+        //    if (temp != 0)
+        //        delete[] temp;
+        //}
     }
 
 
@@ -61,7 +147,7 @@ public:
 
         // update the current wave table selector
         int curWaveTable = 0;
-        while ((mPhaseInc >= mWaveTables[curWaveTable].topFreq) && (curWaveTable < (mNumWaveTables - 1)))
+        while ((mPhaseInc >= waveMem->mWaveTables[curWaveTable].topFreq) && (curWaveTable < (waveMem->mNumWaveTables - 1)))
         {
             ++curWaveTable;
             
@@ -131,9 +217,13 @@ public:
     //
     float GetOutput(void)
     {
-        waveTable * waveTable = &mWaveTables[mCurWaveTable];
-
+        //waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
+        WaveTableMemory::waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
         // linear interpolation
+        if (mPhasor > 1.0)
+        {
+            mPhasor = 1.0;
+        }
         float temp = mPhasor * waveTable->waveTableLen;
         int intPart = temp;
         float fracPart = temp - intPart;
@@ -152,9 +242,9 @@ public:
     //
     float GetOutputMinusOffset()
     {
-        waveTable * waveTable = &mWaveTables[mCurWaveTable];
+        WaveTableMemory::waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
         int len = waveTable->waveTableLen;
-        float * wave = waveTable->waveTable;
+        float * wave = waveTable->waveTable.data();
 
         // linear
         float temp = mPhasor * len;
@@ -176,34 +266,6 @@ public:
         return samp - (samp0 + (samp1 - samp0) * fracPart);
     }
 
-    //
-    // AddWaveTable
-    //
-    // add wavetables in order of lowest frequency to highest
-    // topFreq is the highest frequency supported by a wavetable
-    // wavetables within an oscillator can be different lengths
-    //
-    // returns 0 upon success, or the number of wavetables if no more room is available
-    //
-    int AddWaveTable(int len, float * waveTableIn, double topFreq)
-    {
-        if (mNumWaveTables < numWaveTableSlots)
-        {
-            float * waveTable = mWaveTables[mNumWaveTables].waveTable = new float[len + 1];
-            mWaveTables[mNumWaveTables].waveTableLen = len;
-            mWaveTables[mNumWaveTables].topFreq = topFreq;
-            ++mNumWaveTables;
-
-            // fill in wave
-            for (long idx = 0; idx < len; idx++)
-                waveTable[idx] = waveTableIn[idx];
-            waveTable[len] = waveTable[0];  // duplicate for interpolation wraparound
-
-            return 0;
-        }
-        return mNumWaveTables;
-    }
-
 protected:
     double mPhasor = 0.0;  // phase accumulator
     double mPhaseInc = 0.0;  // phase increment
@@ -211,15 +273,9 @@ protected:
 
     // array of wavetables
     int mCurWaveTable = 0;  // current table, based on current frequency
-    int mNumWaveTables = 0;  // number of wavetable slots in use
-    struct waveTable
-    {
-        double topFreq;
-        int waveTableLen;
-        float * waveTable;
-    };
-    static constexpr int numWaveTableSlots = 40;  // simplify allocation with reasonable maximum
-    waveTable mWaveTables[numWaveTableSlots];
+
+
 };
+
 
 #endif

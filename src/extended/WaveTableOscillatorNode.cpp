@@ -83,23 +83,25 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
       m_phaseModValues(AudioNode::ProcessingSizeInFrames), 
       m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames)
 {
-    m_waveOscillators = {
-        sawOsc(),
-        sawOsc(),
-        sawOsc(),
-        sawOsc(),
-        sawOsc(),
-        sawOsc(),
-        sawOsc(),
-        sawOsc(),
-        sawOsc()};
 
-        wavetable_cache = {
-        sinOsc(),
-        triangleOsc(),
-        squareOsc(),
-        sawOsc()};
-    
+
+    wavetable_cache = {
+        std::make_shared<WaveTableOsc>("sine"),
+        std::make_shared<WaveTableOsc>("triangle"),
+        std::make_shared<WaveTableOsc>("square"),
+        std::make_shared<WaveTableOsc>("saw")};
+
+    m_waveOscillators = {
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw"),
+        std::make_shared<WaveTableOsc>("saw")};
+
     m_type = setting("type");
     m_frequency = param("frequency");
     m_detune = param("detune");
@@ -292,7 +294,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
     auto RenderSuperSawSamples = [&]()
     {
         const int numOscillators = 9;
-        float detuneAmounts[numOscillators] = {11, 9, 6, 3, 0.0, 3, 6, 9, 11};  // Example detuning amounts
+        float detuneAmounts[numOscillators] = {401, 309, 206, 103, 0.0, 103, 206, 309, 401};  // Example detuning amounts
 
         for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
         {
