@@ -147,6 +147,7 @@ public:
         m_sustainLevel->setValueChanged([&]{
             const float level = m_sustainLevel->valueFloat();
             this->decayBase = (level - targetRatioDR) * (1.0 - decayCoef); });
+
     }
 
     virtual void uninitialize() override { }
@@ -236,7 +237,7 @@ public:
 
         for (int i = 0; i < framesToProcess; ++i)
         {
-            if (_gateArray[i] && (state & (env_attack | env_decay | env_sustain)) == 0)
+            if (_gateArray[i]>0.0 && (state & (env_attack | env_decay | env_sustain)) == 0)
             {
                 output = 0.0;
                 state = env_attack;
@@ -244,10 +245,7 @@ public:
             }
             else if (_gateArray[i] <= 0 && state != env_idle)
             {
-                //if (mode == ADSR)
-                    state = env_release;
-                //else
-                    //state = env_idle;
+                state = env_release;
             }
 
             envelope[i] = processEnv();

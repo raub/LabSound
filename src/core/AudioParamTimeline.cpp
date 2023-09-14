@@ -101,6 +101,7 @@ void AudioParamTimeline::insertEvent(const ParamEvent & event)
         // Overwrite same event type and time.
         if (m_events[i].time() == insertTime && m_events[i].type() == event.type())
         {
+            //std::cout << "skipping overwrite" << std::endl;
             m_events[i] = event;
             return;
         }
@@ -110,9 +111,11 @@ void AudioParamTimeline::insertEvent(const ParamEvent & event)
             break;
         }
     }
-
+    if (m_events.begin() + i != m_events.end())
+        lastProcessedEventIndex = 0;
+    
     m_events.insert(m_events.begin() + i, event);
-    lastProcessedEventIndex = 0;
+    
 }
 
 void AudioParamTimeline::cancelScheduledValues(float startTime)
@@ -396,10 +399,10 @@ float AudioParamTimeline::valuesForTimeRangeImpl(
         {
             lastProcessedEventIndex = i;
         }
-        else
-        {
-            lastProcessedEventIndex = 0;  // reset if we've processed all events
-        }
+        //else
+        //{
+        //    lastProcessedEventIndex = 0;  // reset if we've processed all events
+        //}
     }
 
     // If there's any time left after processing the last event then just propagate the last value
