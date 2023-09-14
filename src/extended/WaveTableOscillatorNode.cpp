@@ -90,6 +90,8 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
         sawOsc(),
         sawOsc(),
         sawOsc(),
+        sawOsc(),
+        sawOsc(),
         sawOsc()};
 
         wavetable_cache = {
@@ -133,10 +135,9 @@ WaveTableWaveType WaveTableOscillatorNode::type() const
 void WaveTableOscillatorNode::resetPhase()
 {
     m_waveOsc->ResetPhase();
-    float detuneAmounts[7] = {-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3};
     for (auto & osc : m_waveOscillators)
     {
-        osc->ResetPhase(detuneAmounts[7]);
+        osc->ResetPhase();
     }
 }
 
@@ -254,6 +255,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
     //float lastFreq = -1;
     auto RenderSamplesMinusOffset = [&]() {
         
+        const int numOscillators = 9;  // For the central saw and 3 detuned saws on either side
         for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
         {
             // Update the PolyBlepImpl's frequency for each sample
@@ -289,8 +291,8 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
 
     auto RenderSuperSawSamples = [&]()
     {
-        const int numOscillators = 7;  // For the central saw and 3 detuned saws on either side
-        float detuneAmounts[numOscillators] = {-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3};  // Example detuning amounts
+        const int numOscillators = 9;
+        float detuneAmounts[numOscillators] = {11, 9, 6, 3, 0.0, 3, 6, 9, 11};  // Example detuning amounts
 
         for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
         {
@@ -301,7 +303,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
 
             for (int osc = 0; osc < numOscillators; ++osc)
             {
-                float detunedFrequency = freq + (detuneAmounts[osc]);
+                float detunedFrequency = freq + (std::pow(2.0, detuneAmounts[osc] / 1200.0));
                 float normalizedFrequency = detunedFrequency / sample_rate;
 
                 m_waveOscillators[osc]->SetFrequency(normalizedFrequency);
@@ -309,7 +311,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
                 m_waveOscillators[osc]->UpdatePhase(modulation);
             }
 
-            *destination++ = sum / (numOscillators/2.0);  // Averaging the output of the saw oscillators
+            *destination++ = sum / ((float)numOscillators-1.0);  // Averaging the output of the saw oscillators
         }
     };
 
