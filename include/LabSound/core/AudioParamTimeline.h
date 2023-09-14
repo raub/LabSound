@@ -14,6 +14,8 @@ namespace lab
 
 class AudioParamTimeline
 {
+protected:
+    std::mutex m_eventsMutex;
 
 public:
     AudioParamTimeline() {}
@@ -42,7 +44,7 @@ public:
 private:
 
     // @tofix - move to implementation file to hide from public API
-
+    size_t lastProcessedEventIndex = 0;
     class ParamEvent
     {
 

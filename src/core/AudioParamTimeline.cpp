@@ -22,7 +22,7 @@ namespace lab
 //@tofix - is there any reason this should be per object instead of static?
 namespace
 {
-    std::mutex m_eventsMutex;
+    
 }
 
 void AudioParamTimeline::setValueAtTime(float value, float time)
@@ -116,6 +116,7 @@ void AudioParamTimeline::insertEvent(const ParamEvent & event)
     }
 
     m_events.insert(m_events.begin() + i, event);
+    lastProcessedEventIndex = 0;
 }
 
 void AudioParamTimeline::cancelScheduledValues(float startTime)
@@ -131,6 +132,7 @@ void AudioParamTimeline::cancelScheduledValues(float startTime)
             break;
         }
     }
+    lastProcessedEventIndex = 0;
 }
 
 float AudioParamTimeline::valueForContextTime(
@@ -215,10 +217,9 @@ float AudioParamTimeline::valuesForTimeRangeImpl(
 
     // Go through each event and render the value buffer where the times overlap,
     // stopping when we've rendered all the requested values.
-    // FIXME: could try to optimize by avoiding having to iterate starting from the very first event
-    // and keeping track of a "current" event index.
+    
     int n = static_cast<int>(m_events.size());
-    for (int i = 0; i < n && writeIndex < numberOfValues; ++i)
+    for (int i = lastProcessedEventIndex; i < n && writeIndex < numberOfValues; ++i)
     {
         ParamEvent & event = m_events[i];
         ParamEvent * nextEvent = i < n - 1 ? &(m_events[i + 1]) : 0;
@@ -394,6 +395,14 @@ float AudioParamTimeline::valuesForTimeRangeImpl(
                     break;
                 }
             }
+        }
+        if (i < n)
+        {
+            lastProcessedEventIndex = i;
+        }
+        else
+        {
+            lastProcessedEventIndex = 0;  // reset if we've processed all events
         }
     }
 
