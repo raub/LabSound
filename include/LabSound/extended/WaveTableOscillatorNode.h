@@ -59,6 +59,7 @@ public:
 
     WaveTableWaveType type() const;
     void setType(WaveTableWaveType type);
+    void resetPhase();
 
     std::shared_ptr<AudioParam> frequency() { return m_frequency; }
     std::shared_ptr<AudioParam> detune() { return m_detune; }
@@ -73,7 +74,7 @@ public:
     std::shared_ptr<AudioParam> m_phaseModDepth;  // phase modulation depth
 
     void processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count);
-
+    
     AudioFloatArray m_amplitudeValues;
     AudioFloatArray m_frequencyValues;
     AudioFloatArray m_detuneValues;

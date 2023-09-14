@@ -69,6 +69,11 @@ public:
         mCurWaveTable = curWaveTable;
     }
 
+    void ResetPhase(double phase = 0.0)
+    {
+        mPhasor = phase;
+    }
+
     //
     // SetPhaseOffset: Phase offset for PWM, 0-1
     //

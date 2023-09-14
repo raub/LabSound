@@ -74,13 +74,6 @@ AudioNodeDescriptor * WaveTableOscillatorNode::desc()
     static AudioNodeDescriptor d {s_waveTableParams, s_pbSettings};
     return &d;
 }
-//std::shared_ptr<WaveTableOsc> WaveTableOscillatorNode::wavetable_cache[] = {
-//    sinOsc(),
-//    triangleOsc(),
-//    squareOsc(),
-//    sawOsc()};
-
-
 
 WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
     : AudioScheduledSourceNode(ac, *desc()), 
@@ -137,25 +130,31 @@ WaveTableWaveType WaveTableOscillatorNode::type() const
     return WaveTableWaveType(m_type->valueUint32());
 }
 
+void WaveTableOscillatorNode::resetPhase()
+{
+    m_waveOsc->ResetPhase();
+    float detuneAmounts[7] = {-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3};
+    for (auto & osc : m_waveOscillators)
+    {
+        osc->ResetPhase(detuneAmounts[7]);
+    }
+}
+
 void WaveTableOscillatorNode::setType(WaveTableWaveType type)
 {
     switch (type)
     {
         case WaveTableWaveType::SINE:
-    //        m_waveOsc = sinOsc();
             m_waveOsc = wavetable_cache[0];
             break;
         case WaveTableWaveType::TRIANGLE:
             m_waveOsc = wavetable_cache[1];
-            //m_waveOsc = triangleOsc();
             break;
         case WaveTableWaveType::SQUARE:
             m_waveOsc = wavetable_cache[2];
-    //        m_waveOsc = squareOsc();
             break;
         case WaveTableWaveType::SAWTOOTH:
             m_waveOsc = wavetable_cache[3];
-    //        m_waveOsc = sawOsc();
             break;
     }
     m_type->setUint32(static_cast<uint32_t>(type));
@@ -302,7 +301,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
 
             for (int osc = 0; osc < numOscillators; ++osc)
             {
-                float detunedFrequency = freq + (detuneAmounts[osc]*0.1);
+                float detunedFrequency = freq + (detuneAmounts[osc]);
                 float normalizedFrequency = detunedFrequency / sample_rate;
 
                 m_waveOscillators[osc]->SetFrequency(normalizedFrequency);
@@ -310,7 +309,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
                 m_waveOscillators[osc]->UpdatePhase(modulation);
             }
 
-            *destination++ = sum / numOscillators;  // Averaging the output of the saw oscillators
+            *destination++ = sum / (numOscillators/2.0);  // Averaging the output of the saw oscillators
         }
     };
 
