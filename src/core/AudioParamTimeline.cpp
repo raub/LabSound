@@ -19,11 +19,7 @@ using namespace std;
 namespace lab
 {
 
-//@tofix - is there any reason this should be per object instead of static?
-namespace
-{
-    
-}
+std::mutex AudioParamTimeline::m_eventsMutex;
 
 void AudioParamTimeline::setValueAtTime(float value, float time)
 {
