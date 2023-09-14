@@ -263,6 +263,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
             // Update the PolyBlepImpl's frequency for each sample
             double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
             const auto freq = frequencies[i] * detuneFactor;
+            float modulation = phaseMods[i] * phaseModDepths[i];
             //if (freq != lastFreq)
             //{
                 float normalizedFrequency = freq / sample_rate;
@@ -273,7 +274,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
             
             m_waveOsc->SetPhaseOffset(pulseWidths[i]);
             *destination++ = m_waveOsc->GetOutputMinusOffset();
-            m_waveOsc->UpdatePhase();
+            m_waveOsc->UpdatePhase(modulation);
         }
     };
 
