@@ -20,44 +20,22 @@
 
 using namespace lab;
 
-// clang-format off
-
-// Adapted from "Phaseshaping Oscillator Algorithms for Musical Sound
-// Synthesis" by Jari Kleimola, Victor Lazzarini, Joseph Timoney, and Vesa
-// Valimaki. http://www.acoustics.hut.fi/publications/papers/smc2010-phaseshaping/
-
 template <typename T>
 inline int64_t bitwise_or_zero(const T & x) { return static_cast<int64_t>(x) | 0; }
 
 template <typename T>
 inline T square(const T & x) { return x * x; }
 
-inline double blep(const double t, const double dt)
-{
-    if (t < dt) return -square(t / dt - 1);
-    else if (t > 1 - dt)  return square((t - 1) / dt + 1);
-    else return 0.0;
-}
-
-inline double blamp(double t, const double dt)
-{
-    if (t < dt)
-    {
-        t = t / dt - 1.0;
-        return -1.0 / 3.0 * square(t) * t;
-    }
-    else if (t > 1.0 - dt)
-    {
-        t = (t - 1.0) / dt + 1.0;
-        return 1.0 / 3.0 * square(t) * t;
-    }
-    else return 0.0;
-}
-
 // clang-format on
 
 static char const * const s_wavetable_types[] = {
     "Sine", "Triangle", "Square", "Sawtooth",
+    nullptr};
+
+static AudioSettingDescriptor s_wavetableOscSettings[] = {
+    {"unisonCount", "UNICNT", SettingType::Integer},
+    {"unisonSpread","UNISPR", SettingType::Float},
+    {"type", "TYPE", SettingType::Enum, s_wavetable_types},
     nullptr};
 
 static AudioParamDescriptor s_waveTableParams[] = {
@@ -67,11 +45,10 @@ static AudioParamDescriptor s_waveTableParams[] = {
     {"phaseMod", "PHASE", 0.0, -1.0, 1.0},
     {"phaseModDepth", "PHDPTH", 0.0, 0.0, 100.0},
     nullptr};
-static AudioSettingDescriptor s_pbSettings[] = {{"type", "TYPE", SettingType::Enum, s_wavetable_types}, nullptr};
 
 AudioNodeDescriptor * WaveTableOscillatorNode::desc()
 {
-    static AudioNodeDescriptor d {s_waveTableParams, s_pbSettings};
+    static AudioNodeDescriptor d {s_waveTableParams, s_wavetableOscSettings};
     return &d;
 }
 
@@ -81,42 +58,32 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
       m_detuneValues(AudioNode::ProcessingSizeInFrames), 
       m_pulseWidthValues(AudioNode::ProcessingSizeInFrames), 
       m_phaseModValues(AudioNode::ProcessingSizeInFrames), 
-      m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames)
+      m_phaseModDepthValues(AudioNode::ProcessingSizeInFrames), 
+      m_contextRef(ac)
 {
-
-
-    wavetable_cache = {
-        std::make_shared<WaveTableOsc>("sine"),
-        std::make_shared<WaveTableOsc>("triangle"),
-        std::make_shared<WaveTableOsc>("square"),
-        std::make_shared<WaveTableOsc>("saw")};
-
-    m_waveOscillators = {
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw"),
-        std::make_shared<WaveTableOsc>("saw")};
-
     m_type = setting("type");
     m_frequency = param("frequency");
     m_detune = param("detune");
     m_pulseWidth = param("pulseWidth");
     m_phaseMod = param("phaseMod");
     m_phaseModDepth = param("phaseModDepth");
-    
+    m_unisonCount = setting("unisonCount");
+    m_unisonSpread = setting("unisonSpread");
+
     m_detune->setValue(0.f);
     m_pulseWidth->setValue(0.5f);
     m_phaseMod->setValue(0.f);
     m_phaseModDepth->setValue(0.f);
-
-    m_type->setValueChanged([this]() { 
-        setType(WaveTableWaveType(m_type->valueUint32())); 
+    m_waveOsc = std::make_shared<WaveTableOsc>();
+    m_type->setValueChanged([&]() { 
+        setType(WaveTableWaveType(m_type->valueUint32()));
     });
+    m_unisonCount->setUint32(0);
+    m_unisonSpread->setFloat(0.f);
+
+    //m_unisonCount->setValueChanged([&]() { 
+
+    //});
 
     // An oscillator is always mono.
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
@@ -137,7 +104,7 @@ WaveTableWaveType WaveTableOscillatorNode::type() const
 void WaveTableOscillatorNode::resetPhase()
 {
     m_waveOsc->ResetPhase();
-    for (auto & osc : m_waveOscillators)
+    for (auto & osc : m_unisonOscillators)
     {
         osc->ResetPhase();
     }
@@ -145,26 +112,40 @@ void WaveTableOscillatorNode::resetPhase()
 
 void WaveTableOscillatorNode::setType(WaveTableWaveType type)
 {
-    switch (type)
-    {
-        case WaveTableWaveType::SINE:
-            m_waveOsc = wavetable_cache[0];
-            break;
-        case WaveTableWaveType::TRIANGLE:
-            m_waveOsc = wavetable_cache[1];
-            break;
-        case WaveTableWaveType::SQUARE:
-            m_waveOsc = wavetable_cache[2];
-            break;
-        case WaveTableWaveType::SAWTOOTH:
-            m_waveOsc = wavetable_cache[3];
-            break;
-    }
+    m_waveOsc->SetType(type);
     m_type->setUint32(static_cast<uint32_t>(type));
+}
+
+void WaveTableOscillatorNode::update(ContextRenderLock& r)
+{
+    auto const desired = m_unisonCount->valueUint32();
+    auto const actual = m_unisonOscillators.size();
+    if (desired != actual)
+    {
+        m_unisonOscillators.clear();
+        if (desired > 0)
+        {
+            m_unisonOscillators.resize(m_unisonCount->valueUint32());
+            for (int i = 0; i < m_unisonCount->valueUint32(); i++)
+            {
+                m_unisonOscillators[i] = std::make_shared<WaveTableOsc>(static_cast<WaveTableWaveType>(m_type->valueUint32()));
+            }
+        }
+    }
+
+    if (desired > 0)
+    {
+        for (int i = 0; i < desired; i++)
+        {
+            m_unisonOscillators[i]->SetType(static_cast<WaveTableWaveType>(m_type->valueUint32()));
+        }
+    }
 }
 
 void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count)
 {
+    update(r);
+
     AudioBus * outputBus = output(0)->bus(r);
     if (!r.context() || !isInitialized() || !outputBus->numberOfChannels())
     {
@@ -213,7 +194,9 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         float detuneValue = m_detune->smoothedValue();
         for (int i = 0; i < bufferSize; ++i) detunes[i] = detuneValue;
     }
+    //for (int i = 0; i < bufferSize; ++i) detunes[i] = std::pow(2.0, detunes[i] / 1200.0);
 
+     
     float * pulseWidths = m_pulseWidthValues.data();
     if (m_pulseWidth->hasSampleAccurateValues())
     {
@@ -250,90 +233,76 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         for (int i = 0; i < bufferSize; ++i) phaseModDepths[i] = phaseModDepthValue;
     }
 
-
     float * destination = outputBus->channel(0)->mutableData() + offset;
-    //polyblep->setWaveform(static_cast<PolyBLEPType>(m_type->valueUint32()));
-
-    //float lastFreq = -1;
-    auto RenderSamplesMinusOffset = [&]() {
-        
-        const int numOscillators = 9;  // For the central saw and 3 detuned saws on either side
-        for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
+    
+    auto RenderSamplesMinusOffset = [&]()
+    {
+        constexpr float ratio = 1.f / 1200.f;
+        for (int i = offset, end = offset + nonSilentFramesToProcess; i < end; ++i)
         {
-            // Update the PolyBlepImpl's frequency for each sample
-            double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
-            const auto freq = frequencies[i] * detuneFactor;
-            float modulation = phaseMods[i] * phaseModDepths[i];
-            //if (freq != lastFreq)
-            //{
-                float normalizedFrequency = freq / sample_rate;
-
-                m_waveOsc->SetFrequency(normalizedFrequency);
-                //lastFreq = freq;
-            //}
-            
-            m_waveOsc->SetPhaseOffset(pulseWidths[i]);
+            // Convert cents to frequency ratio directly within the computation
+            float normalizedFrequency = (*frequencies++ * fastexp2(*detunes++ * ratio)) / sample_rate;
+            m_waveOsc->SetFrequency(normalizedFrequency);
+            m_waveOsc->SetPhaseOffset(*pulseWidths++);
             *destination++ = m_waveOsc->GetOutputMinusOffset();
-            m_waveOsc->UpdatePhase(modulation);
+            m_waveOsc->UpdatePhase(*phaseMods++ * *phaseModDepths++);
         }
     };
 
-    auto RenderSamples = [&]() {
-        for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
+    auto RenderSamplesWithUnison = [&]()
+    {
+        constexpr float ratio = 1.f / 1200.f;
+        
+        float numOscillators = m_unisonOscillators.size();
+        const float gain = 1.f / numOscillators;
+        // Pre-calculate constant values
+        float totalSpreadInCents = m_unisonSpread->valueFloat();
+        float stepInCents = (numOscillators > 1.f) ? totalSpreadInCents / (numOscillators - 1.f) : 0;
+        float detuneBase = -totalSpreadInCents / 2.0f;
+
+        for (int i = offset, end = offset + nonSilentFramesToProcess; i < end; ++i)
         {
-            double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
-            const auto freq = frequencies[i] * detuneFactor;
-            float modulation = phaseMods[i] * phaseModDepths[i];
-            float normalizedFrequency = freq / sample_rate;
-            //float normalizedFrequency = freq / sample_rate;
+            float sample = 0.f;
+            const float freq = *frequencies++;
+            const float detune = *detunes++;
+            float detuneAmount = detuneBase;
+            for (float u = 0; u < numOscillators; u+=1.f, detuneAmount += stepInCents)
+            {
+                float normalizedFrequency = (freq * fastexp2((detune + detuneAmount) * ratio)) / sample_rate;
+                m_unisonOscillators[u]->SetFrequency(normalizedFrequency);
+                m_unisonOscillators[u]->UpdatePhase();
+                sample += m_unisonOscillators[u]->GetOutput();
+            }
+            *destination++ = sample * gain;
+        }
+    };
+
+    auto RenderSamples = [&]()
+    {
+        constexpr float ratio = 1.f / 1200.f;
+        for (int i = offset, end = offset + nonSilentFramesToProcess; i < end; ++i)
+        {
+            // Convert cents to frequency ratio directly within the computation
+            float normalizedFrequency = (frequencies[i] * fastexp2(detunes[i] * ratio)) / sample_rate;
             m_waveOsc->SetFrequency(normalizedFrequency);
             *destination++ = m_waveOsc->GetOutput();
-            m_waveOsc->UpdatePhase(modulation);
+            m_waveOsc->UpdatePhase(phaseMods[i] * phaseModDepths[i]);
         }
     };
 
-    auto RenderSuperSawSamples = [&]()
+    WaveTableWaveType type = static_cast<WaveTableWaveType> (m_type->valueUint32());
+    if (m_unisonCount->valueUint32() > 0)
     {
-        const int numOscillators = 9;
-        float detuneAmounts[numOscillators] = {401, 309, 206, 103, 0.0, 103, 206, 309, 401};  // Example detuning amounts
-
-        for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
-        {
-            double detuneFactor = std::pow(2.0, detunes[i] / 1200.0);  // Convert cents to frequency ratio
-            const auto freq = frequencies[i] * detuneFactor;
-            float modulation = phaseMods[i] * phaseModDepths[i];
-            float sum = 0.0;
-
-            for (int osc = 0; osc < numOscillators; ++osc)
-            {
-                float detunedFrequency = freq + (std::pow(2.0, detuneAmounts[osc] / 1200.0));
-                float normalizedFrequency = detunedFrequency / sample_rate;
-
-                m_waveOscillators[osc]->SetFrequency(normalizedFrequency);
-                sum += m_waveOscillators[osc]->GetOutput();
-                m_waveOscillators[osc]->UpdatePhase(modulation);
-            }
-
-            *destination++ = sum / ((float)numOscillators-1.0);  // Averaging the output of the saw oscillators
-        }
-    };
-
-
-    if (type() == WaveTableWaveType::SUPERSAW)
-    {
-        RenderSuperSawSamples();
-    }
-    else
-    if (type() == WaveTableWaveType::SQUARE)
-    {
-        RenderSamplesMinusOffset();
+        RenderSamplesWithUnison();
     }
     else
     {
-        RenderSamples();
+        if (type == WaveTableWaveType::SQUARE)
+            RenderSamplesMinusOffset();
+        else
+            RenderSamples();
     }
     
-
     outputBus->clearSilentFlag();
 }
 

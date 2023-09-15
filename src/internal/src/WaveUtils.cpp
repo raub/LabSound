@@ -28,7 +28,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-
+namespace lab
+{
 void fft(int N, double * ar, double * ai);
 float makeWaveTable(WaveTableOsc * osc, int len, double * ar, double * ai, double scale, double topFreq);
 
@@ -322,17 +323,16 @@ WaveTableMemory * waveOsc(double * waveSamples, int tableLen, double samplerate)
 
     // build a wavetable oscillator
 
-
     WaveTableMemory * osc = new WaveTableMemory();
 
-// minTop: the minimum normalized frequency that all wave tables support
+    // minTop: the minimum normalized frequency that all wave tables support
     //      ex.: 18000/44100.0 ensures harmonics out to 18k (44.1kHz sample rate) at minimum
     // maxTop: the maximum normalized freuqency that all wave tables support
     //      ex.: 0.5 give full bandwidth without aliasing; 24000/44100.0 allows a top of 24k, some aliasing
     // The function fills the oscillator with all wavetables necessary for full-bandwidth operation,
     // based on the criteria, and returns the number of tables.
     //
-    //int fillTables2(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, int numSamples, double minTop, double maxTop)
+    // int fillTables2(WaveTableOsc * osc, double * freqWaveRe, double * freqWaveIm, int numSamples, double minTop, double maxTop)
 
     fillTables2(osc, freqWaveRe, freqWaveIm, tableLen, 18000.0 / samplerate, 0.5);
 
@@ -457,4 +457,5 @@ void fft(int N, double * ar, double * ai)
             Ui = Ur_old * Wi + Ui * Wr;
         }
     }
+}
 }

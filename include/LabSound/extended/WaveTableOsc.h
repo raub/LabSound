@@ -22,11 +22,24 @@
 #ifndef WaveTableOsc_h
 #define WaveTableOsc_h
 
+#include "LabSound/extended/WaveUtils.h"
 #include <iostream>
-#include <vector>
 #include <map>
 #include <string>
-#include "LabSound/extended/WaveUtils.h"
+#include <vector>
+
+namespace lab
+{
+
+enum class WaveTableWaveType
+{
+    SINE,
+    TRIANGLE,
+    SQUARE,
+    SAWTOOTH,
+    CUSTOM,
+    _WavetableWaveCount
+};
 
 struct WaveTableMemory
 {
@@ -63,9 +76,9 @@ struct WaveTableMemory
     {
         if (mNumWaveTables < numWaveTableSlots)
         {
-            mWaveTables[mNumWaveTables].waveTable.resize(len+1);// = new float[len + 1];
-            float * waveTable = mWaveTables[mNumWaveTables].waveTable.data();  
-            mWaveTables[mNumWaveTables].waveTableLen = len-1;
+            mWaveTables[mNumWaveTables].waveTable.resize(len + 1);  // = new float[len + 1];
+            float * waveTable = mWaveTables[mNumWaveTables].waveTable.data();
+            mWaveTables[mNumWaveTables].waveTableLen = len - 1;
             mWaveTables[mNumWaveTables].topFreq = topFreq;
             ++mNumWaveTables;
 
@@ -85,53 +98,61 @@ class WaveTableBank
 public:
     WaveTableBank()
     {
-        addWave("sine", sinOsc());
-        addWave("triangle", triangleOsc());
-        addWave("square", squareOsc());
-        addWave("saw", sawOsc());
+        addWave(WaveTableWaveType::SINE, sinOsc());
+        addWave(WaveTableWaveType::TRIANGLE, triangleOsc());
+        addWave(WaveTableWaveType::SQUARE, squareOsc());
+        addWave(WaveTableWaveType::SAWTOOTH, sawOsc());
     }
 
-    std::map<std::string, std::shared_ptr<WaveTableMemory>> m_waves;
+    std::map<WaveTableWaveType, std::shared_ptr<WaveTableMemory>> m_waves;
 
-    void addWave(const std::string & name, std::shared_ptr<WaveTableMemory> waveMem)
+    void addWave(const WaveTableWaveType type, std::shared_ptr<WaveTableMemory> waveMem)
     {
-        if (m_waves.find(name) != m_waves.end())
+        if (m_waves.find(type) != m_waves.end())
         {
             throw std::runtime_error("wave memory by that name already exists");
         }
 
-        m_waves[name] = waveMem;
+        m_waves[type] = waveMem;
     }
 
-    std::shared_ptr<WaveTableMemory> getWave(const std::string name)
+    std::shared_ptr<WaveTableMemory> getWave(const WaveTableWaveType type)
     {
-        auto wave = m_waves.find(name);
+        auto wave = m_waves.find(type);
         if (wave == m_waves.end())
             return nullptr;
         return wave->second;
     }
 };
 
-
 class WaveTableOsc
 {
 public:
     static WaveTableBank bank;
     std::shared_ptr<WaveTableMemory> waveMem;
-    WaveTableOsc(const std::string& name)
+
+    WaveTableOsc()
     {
-        waveMem = bank.getWave(name);
+        SetType(WaveTableWaveType::SINE);
+    }
+    WaveTableOsc(WaveTableWaveType type)
+    {
+        waveMem = bank.getWave(type);
     }
     ~WaveTableOsc(void)
     {
-        //for (int idx = 0; idx < numWaveTableSlots; idx++)
+        // for (int idx = 0; idx < numWaveTableSlots; idx++)
         //{
-        //    float * temp = mWaveTables[idx].waveTable;
-        //    if (temp != 0)
-        //        delete[] temp;
-        //}
+        //     float * temp = mWaveTables[idx].waveTable;
+        //     if (temp != 0)
+        //         delete[] temp;
+        // }
     }
 
+    void SetType(WaveTableWaveType type)
+    {
+        waveMem = bank.getWave(type);
+    }
 
     void SetAbsoluteFrequency(float freq, float samplerate)
     {
@@ -141,7 +162,7 @@ public:
     //
     // SetFrequency: Set normalized frequency, typically 0-0.5 (must be positive and less than 1!)
     //
-    void SetFrequency(double inc)
+    inline void SetFrequency(double inc)
     {
         mPhaseInc = inc;
 
@@ -150,7 +171,6 @@ public:
         while ((mPhaseInc >= waveMem->mWaveTables[curWaveTable].topFreq) && (curWaveTable < (waveMem->mNumWaveTables - 1)))
         {
             ++curWaveTable;
-            
         }
         mCurWaveTable = curWaveTable;
     }
@@ -171,9 +191,9 @@ public:
     //
     // UpdatePhase: Call once per sample
     //
-    void UpdatePhase(double mod)
+    inline void UpdatePhase(double mod)
     {
-        mPhasor += (mPhaseInc * (1.f+mod));
+        mPhasor += (mPhaseInc * (1.f + mod));
 
         if (mPhasor >= 1.0)
             mPhasor -= 1.0;
@@ -193,7 +213,6 @@ public:
         }
         // mPhasor = 1.0 - (-mPhasor - floor(-mPhasor));  // This will handle the negative phase wrap correctly
     }
-
 
     void UpdatePhase()
     {
@@ -215,15 +234,15 @@ public:
     //
     // GetOutput: Returns the current oscillator output
     //
-    float GetOutput(void)
+    float GetOutput()
     {
-        //waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
+        // waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
         WaveTableMemory::waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
         // linear interpolation
-        if (mPhasor > 1.0)
-        {
-            mPhasor = 1.0;
-        }
+        // if (mPhasor > 1.0)
+        //{
+        //    mPhasor -= 1.0;
+        //}
         float temp = mPhasor * waveTable->waveTableLen;
         int intPart = temp;
         float fracPart = temp - intPart;
@@ -273,9 +292,7 @@ protected:
 
     // array of wavetables
     int mCurWaveTable = 0;  // current table, based on current frequency
-
-
 };
 
-
+}
 #endif

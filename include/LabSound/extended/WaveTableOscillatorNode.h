@@ -23,32 +23,56 @@ class AudioSetting;
 
  */
 
-enum class WaveTableWaveType
-{
-    SINE,
-    TRIANGLE,
-    SQUARE,
-    SAWTOOTH,
-    SUPERSAW,
-    CUSTOM,
-    _WavetableWaveCount
-};
+
 
 class WaveTableOscillatorNode : public AudioScheduledSourceNode
 {
+private:
     virtual double tailTime(ContextRenderLock & r) const override { return 0; }
     virtual double latencyTime(ContextRenderLock & r) const override { return 0; }
     virtual bool propagatesSilence(ContextRenderLock & r) const override;
     std::shared_ptr<AudioSetting> m_type;
     std::shared_ptr<WaveTableOsc> m_waveOsc;
-    
+    std::vector < std::shared_ptr<WaveTableOsc> > m_unisonOscillators;
+    AudioContext & m_contextRef;
+
+    inline float fastexp2(float p)
+    {
+        if (p < -126.f) p = -126.f;
+        int w = (int) p;
+        float z = p - (float) w;
+        if (p < 0.f) z += 1.f;
+        union
+        {
+            uint32_t i;
+            float f;
+        } v = {(uint32_t) ((1 << 23) * (p + 121.2740575f + 27.7280233f / (4.84252568f - z) - 1.49012907f * z))};
+        return v.f;
+    }
+
+    std::shared_ptr<AudioParam> m_frequency;  // hz
+    std::shared_ptr<AudioParam> m_detune;  // cents
+    std::shared_ptr<AudioParam> m_pulseWidth;  // pulse width
+    std::shared_ptr<AudioParam> m_phaseMod;  // phase modulation
+    std::shared_ptr<AudioParam> m_phaseModDepth;  // phase modulation depth
+
+    std::shared_ptr<AudioSetting> m_unisonCount;
+    std::shared_ptr<AudioSetting> m_unisonSpread; 
+
+    AudioFloatArray m_amplitudeValues;
+    AudioFloatArray m_frequencyValues;
+    AudioFloatArray m_detuneValues;
+    AudioFloatArray m_pulseWidthValues;
+    AudioFloatArray m_phaseModValues;
+    AudioFloatArray m_phaseModDepthValues;
+    void update(ContextRenderLock & r);
 
 public:
     WaveTableOscillatorNode(AudioContext & ac);
     virtual ~WaveTableOscillatorNode();
-
-    std::vector<std::shared_ptr<WaveTableOsc>> wavetable_cache;
-    std::vector<std::shared_ptr<WaveTableOsc>> m_waveOscillators;
+    
+    //std::vector<std::shared_ptr<WaveTableOsc>> m_waveOscillators;
+    
 
     static const char * static_name() { return "WavetableOscillator"; }
     virtual const char * name() const override { return static_name(); }
@@ -66,21 +90,13 @@ public:
     std::shared_ptr<AudioParam> pulseWidth() { return m_pulseWidth; }
     std::shared_ptr<AudioParam> phaseMod() { return m_phaseMod; }
     std::shared_ptr<AudioParam> phaseModDepth() { return m_phaseModDepth; }
+    std::shared_ptr<AudioSetting> unisonCount() { return m_unisonCount; }
+    std::shared_ptr<AudioSetting> unisonSpread() { return m_unisonSpread; }
 
-    std::shared_ptr<AudioParam> m_frequency;  // hz
-    std::shared_ptr<AudioParam> m_detune;  // cents
-    std::shared_ptr<AudioParam> m_pulseWidth;  // pulse width
-    std::shared_ptr<AudioParam> m_phaseMod;  // phase modulation
-    std::shared_ptr<AudioParam> m_phaseModDepth;  // phase modulation depth
 
     void processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count);
     
-    AudioFloatArray m_amplitudeValues;
-    AudioFloatArray m_frequencyValues;
-    AudioFloatArray m_detuneValues;
-    AudioFloatArray m_pulseWidthValues;
-    AudioFloatArray m_phaseModValues;
-    AudioFloatArray m_phaseModDepthValues;
+
 };
 
 }  // namespace lab
