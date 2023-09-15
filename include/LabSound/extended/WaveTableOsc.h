@@ -133,14 +133,23 @@ public:
 
     WaveTableOsc()
     {
+        std::cout << "WaveTableOsc CTOR" << std::endl;
         SetType(WaveTableWaveType::SINE);
+        mPhasor = 0.f;
+        mPhaseInc = 0.f;
+        mPhaseOfs = 0.f;
     }
     WaveTableOsc(WaveTableWaveType type)
     {
+        std::cout << "WaveTableOsc CTOR " << (int)type << std::endl;
         waveMem = bank.getWave(type);
+        mPhasor = 0.f;
+        mPhaseInc = 0.f;
+        mPhaseOfs = 0.f;
     }
     ~WaveTableOsc(void)
     {
+        std::cout << "WaveTableOsc *DTOR" << std::endl;
         // for (int idx = 0; idx < numWaveTableSlots; idx++)
         //{
         //     float * temp = mWaveTables[idx].waveTable;
@@ -194,7 +203,6 @@ public:
     inline void UpdatePhase(double mod)
     {
         mPhasor += (mPhaseInc * (1.f + mod));
-
         if (mPhasor >= 1.0)
             mPhasor -= 1.0;
         // mPhasor -= floor(mPhasor);  // This will handle cases where mPhasor might exceed 2, 3, etc.
@@ -203,12 +211,12 @@ public:
 
         if (mPhasor >= 1.0)
         {
-            std::cout << "OVER 1" << std::endl;
+            std::cout << "OVER 1:" << mPhasor << std::endl;
             mPhasor -= floor(mPhasor);
         }
         if (mPhasor < 0.0)
         {
-            std::cout << "UNDER 0" << std::endl;
+            std::cout << "UNDER 0:" << mPhasor << std::endl;
             mPhasor = 1.0 - (-mPhasor - floor(-mPhasor));
         }
         // mPhasor = 1.0 - (-mPhasor - floor(-mPhasor));  // This will handle the negative phase wrap correctly

@@ -35,7 +35,7 @@ private:
     std::shared_ptr<WaveTableOsc> m_waveOsc;
     std::vector < std::shared_ptr<WaveTableOsc> > m_unisonOscillators;
     AudioContext & m_contextRef;
-
+    WaveTableWaveType m_cachedType;
     inline float fastexp2(float p)
     {
         if (p < -126.f) p = -126.f;
