@@ -40,13 +40,7 @@ public:
     void processMoogFilter(ContextRenderLock & r, int bufferSize, int offset, int count);
 
 protected:
-    double V[4];
-    double dV[4];
-    double tV[4];
-
-    double x;
-    double g;
-
+    double in1, in2, in3, in4, out1, out2, out3, out4;
     virtual double tailTime(ContextRenderLock & r) const override { return 0; }
     virtual double latencyTime(ContextRenderLock & r) const override { return 0; }
 

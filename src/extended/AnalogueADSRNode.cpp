@@ -234,7 +234,6 @@ public:
         bool oneshot = m_oneShot->valueBool();
 
         cached_sample_rate = r.context()->sampleRate();
-
         for (int i = 0; i < framesToProcess; ++i)
         {
             if (_gateArray[i]>0.0 && (state & (env_attack | env_decay | env_sustain)) == 0)
@@ -250,7 +249,6 @@ public:
 
             envelope[i] = processEnv();
         }
-
         destinationBus->copyWithSampleAccurateGainValuesFrom(*sourceBus, envelope.data(), framesToProcess);
     }
 

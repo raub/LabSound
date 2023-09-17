@@ -141,7 +141,6 @@ void WaveTableOscillatorNode::update(ContextRenderLock& r)
 }
 void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count)
 {
-    
     update(r);
 
     AudioBus * outputBus = output(0)->bus(r);
@@ -329,7 +328,6 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         //    RenderSamplesWithUnisonMinusOffset();
         //else
             RenderSamplesWithUnison();
-
     }
     else
     {

@@ -133,7 +133,6 @@ public:
 
     WaveTableOsc()
     {
-        std::cout << "WaveTableOsc CTOR" << std::endl;
         SetType(WaveTableWaveType::SINE);
         mPhasor = 0.f;
         mPhaseInc = 0.f;
@@ -141,22 +140,12 @@ public:
     }
     WaveTableOsc(WaveTableWaveType type)
     {
-        std::cout << "WaveTableOsc CTOR " << (int)type << std::endl;
         waveMem = bank.getWave(type);
         mPhasor = 0.f;
         mPhaseInc = 0.f;
         mPhaseOfs = 0.f;
     }
-    ~WaveTableOsc(void)
-    {
-        std::cout << "WaveTableOsc *DTOR" << std::endl;
-        // for (int idx = 0; idx < numWaveTableSlots; idx++)
-        //{
-        //     float * temp = mWaveTables[idx].waveTable;
-        //     if (temp != 0)
-        //         delete[] temp;
-        // }
-    }
+    ~WaveTableOsc(void) = default;
 
     void SetType(WaveTableWaveType type)
     {
