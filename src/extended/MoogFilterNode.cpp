@@ -136,28 +136,28 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
     
     float * destination = outputBus->channel(0)->mutableData() + offset;
     const float * source = inputBus->channel(0)->data();
-    static std::vector<float> lastFrame;
-    if (lastFrame.size() != m_sampleAccurateCutoffValues.size())
-    {
-        lastFrame.resize(m_sampleAccurateCutoffValues.size());
-        memcpy(lastFrame.data(), cutoffs, m_sampleAccurateCutoffValues.size() * sizeof(float));
-    }
+    //static std::vector<float> lastFrame;
+    //if (lastFrame.size() != m_sampleAccurateCutoffValues.size())
+    //{
+    //    lastFrame.resize(m_sampleAccurateCutoffValues.size());
+    //    memcpy(lastFrame.data(), cutoffs, m_sampleAccurateCutoffValues.size() * sizeof(float));
+    //}
 
-    const float smoothingFactor = .85; 
+    //const float smoothingFactor = .85; 
 
 
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
      {
             float input = source[i];
 
-            float currentCutoff = lastFrame[i];
-            float targetCutoff = cutoffs[i];
-            
-            currentCutoff = currentCutoff + (targetCutoff - currentCutoff) * smoothingFactor;
-            
-            lastFrame[i] = currentCutoff;
+            //float currentCutoff = lastFrame[i];
+            //float targetCutoff = cutoffs[i];
+            //
+            //currentCutoff = currentCutoff + (targetCutoff - currentCutoff) * smoothingFactor;
+            //
+            //lastFrame[i] = currentCutoff;
 
-            const double f = currentCutoff * 1.16;
+            const double f = cutoffs[i] * 1.16;
             const double inputFactor = 0.35013 * (f * f) * (f * f);
             const double fb = resos[i] * (1.0 - 0.15 * f * f);
             

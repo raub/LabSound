@@ -14,8 +14,10 @@ namespace lab
 
 class AnalogueADSRNode : public AudioNode
 {
+private:
     class ADSRNodeImpl;
     ADSRNodeImpl * adsr_impl;
+    
 
 public:
     enum ADSRMode
