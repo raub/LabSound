@@ -136,17 +136,28 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
     
     float * destination = outputBus->channel(0)->mutableData() + offset;
     const float * source = inputBus->channel(0)->data();
-    //const double sample_rate =(double)r.context()->sampleRate();
+    static std::vector<float> lastFrame;
+    if (lastFrame.size() != m_sampleAccurateCutoffValues.size())
+    {
+        lastFrame.resize(m_sampleAccurateCutoffValues.size());
+        memcpy(lastFrame.data(), cutoffs, m_sampleAccurateCutoffValues.size() * sizeof(float));
+    }
 
-    //std::cout << cutoffs[0] << std::endl;
-    //const double samplratex2 = 2.0 * sample_rate;
+    const float smoothingFactor = .85; 
+
+
     for (int i = offset; i < offset + nonSilentFramesToProcess; ++i)
      {
             float input = source[i];
-            //if (cutoffs[i] > 1.f)
-              //  cutoffs[i] = 1.f;
 
-            const double f = cutoffs[i] * 1.16;
+            float currentCutoff = lastFrame[i];
+            float targetCutoff = cutoffs[i];
+            
+            currentCutoff = currentCutoff + (targetCutoff - currentCutoff) * smoothingFactor;
+            
+            lastFrame[i] = currentCutoff;
+
+            const double f = currentCutoff * 1.16;
             const double inputFactor = 0.35013 * (f * f) * (f * f);
             const double fb = resos[i] * (1.0 - 0.15 * f * f);
             
@@ -162,7 +173,8 @@ void MoogFilterNode::processMoogFilter(ContextRenderLock & r, int bufferSize, in
             out4 = out3 + 0.3 * in4 + (1 - f) * out4;  // Pole 4
             in4 = out3;
             destination[i] = out4;
-            
+
+
      }
 
      outputBus->clearSilentFlag();
