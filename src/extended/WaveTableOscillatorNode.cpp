@@ -75,10 +75,6 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
     m_phaseMod->setValue(0.f);
     m_phaseModDepth->setValue(0.f);
     m_waveOsc = std::make_shared<WaveTableOsc>();
-    //m_type->setValueChanged([&]() { 
-    //    auto t = WaveTableWaveType(m_type->valueUint32());
-    //    setType(t);
-    //});
     m_unisonCount->setUint32(0);
     m_unisonSpread->setFloat(0.f);
     // An oscillator is always mono.
@@ -105,6 +101,17 @@ void WaveTableOscillatorNode::resetPhase()
         osc->ResetPhase();
     }
 }
+
+
+void WaveTableOscillatorNode::setPhase(float p)
+{
+    m_waveOsc->SetPhaseOffset(p);
+    for (auto & osc : m_unisonOscillators)
+    {
+        osc->SetPhaseOffset(p);
+    }
+}
+
 
 void WaveTableOscillatorNode::setType(WaveTableWaveType type)
 {
@@ -139,6 +146,23 @@ void WaveTableOscillatorNode::update(ContextRenderLock& r)
         }
     }
 }
+
+float* WaveTableOscillatorNode::GetSampleAccurateData(ContextRenderLock & r, AudioFloatArray & values, std::shared_ptr<AudioParam> param, size_t bufferSize)
+{
+    float * sampleData = values.data();
+    if (param->hasSampleAccurateValues())
+    {
+        param->calculateSampleAccurateValues(r, sampleData, bufferSize);
+    }
+    else
+    {
+        param->smooth(r);
+        float freq = param->smoothedValue();
+        for (int i = 0; i < bufferSize; ++i) sampleData[i] = freq;
+    }
+    return sampleData;
+}
+
 void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count)
 {
     update(r);
@@ -160,80 +184,17 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         return;
     }
 
-    //if (bufferSize > m_frequencyValues.size()) m_frequencyValues.allocate(bufferSize);
-    //if (bufferSize > m_detuneValues.size()) m_detuneValues.allocate(bufferSize);
-    //if (bufferSize > m_pulseWidthValues.size()) m_pulseWidthValues.allocate(bufferSize);
-    //if (bufferSize > m_phaseModValues.size()) m_phaseModValues.allocate(bufferSize);
-    //if (bufferSize > m_phaseModDepthValues.size()) m_phaseModDepthValues.allocate(bufferSize);
+    float* frequencies = GetSampleAccurateData(r, m_frequencyValues, m_frequency, bufferSize);
+    float* detunes = GetSampleAccurateData(r, m_detuneValues, m_detune, bufferSize);
+    float* pulseWidths = GetSampleAccurateData(r, m_pulseWidthValues, m_pulseWidth, bufferSize);        
+    float* phaseMods = GetSampleAccurateData(r, m_phaseModValues, m_phaseMod, bufferSize);        
+    float* phaseModDepths = GetSampleAccurateData(r, m_phaseModDepthValues, m_phaseModDepth, bufferSize);        
 
-    // fetch the frequencies
-    float * frequencies = m_frequencyValues.data();
-    if (m_frequency->hasSampleAccurateValues())
-    {
-        m_frequency->calculateSampleAccurateValues(r, frequencies, bufferSize);
-    }
-    else
-    {
-        m_frequency->smooth(r);
-        float freq = m_frequency->smoothedValue();
-        for (int i = 0; i < bufferSize; ++i) frequencies[i] = freq;
-    }
-
-    // calculate and write the wave
-    float * detunes = m_detuneValues.data();
-    if (m_detune->hasSampleAccurateValues())
-    {
-        m_detune->calculateSampleAccurateValues(r, detunes, bufferSize);
-    }
-    else
-    {
-        m_detune->smooth(r);
-        float detuneValue = m_detune->smoothedValue();
-        for (int i = 0; i < bufferSize; ++i) detunes[i] = detuneValue;
-    }
-    //for (int i = 0; i < bufferSize; ++i) detunes[i] = std::pow(2.0, detunes[i] / 1200.0);
-
-     
-    float * pulseWidths = m_pulseWidthValues.data();
-    if (m_pulseWidth->hasSampleAccurateValues())
-    {
-        m_pulseWidth->calculateSampleAccurateValues(r, pulseWidths, bufferSize);
-    }
-    else
-    {
-        //m_pulseWidth->smooth(r);
-        float pulseWidthValue = m_pulseWidth->value();
-        for (int i = 0; i < bufferSize; ++i) pulseWidths[i] = pulseWidthValue;
-    }
-
-    float * phaseMods = m_phaseModValues.data();
-    if (m_phaseMod->hasSampleAccurateValues())
-    {
-        m_phaseMod->calculateSampleAccurateValues(r, phaseMods, bufferSize);
-    }
-    else
-    {
-        //m_phaseMod->smooth(r);
-        float phaseModValue = m_phaseMod->value();
-            //smoothedValue();
-        for (int i = 0; i < bufferSize; ++i) phaseMods[i] = phaseModValue;
-    }
-
-    float * phaseModDepths = m_phaseModDepthValues.data();
-    if (m_phaseModDepth->hasSampleAccurateValues())
-    {
-        m_phaseModDepth->calculateSampleAccurateValues(r, phaseModDepths, bufferSize);
-    }
-    else
-    {
-        //m_phaseModDepth->smooth(r);
-        float phaseModDepthValue = m_phaseModDepth->value();
-        for (int i = 0; i < bufferSize; ++i) phaseModDepths[i] = phaseModDepthValue;
-    }
-
-    float * destination = outputBus->channel(0)->mutableData() + offset;
+    float* destination = outputBus->channel(0)->mutableData() + offset;
     constexpr float ratio = 1.f / 1200.f;
     
+    // calculate and write the wave
+
     auto RenderSamplesMinusOffset = [&]()
     {
         for (int i = offset, end = offset + nonSilentFramesToProcess; i < end; ++i)

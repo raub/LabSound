@@ -23,8 +23,6 @@ class AudioSetting;
 
  */
 
-
-
 class WaveTableOscillatorNode : public AudioScheduledSourceNode
 {
 private:
@@ -36,6 +34,7 @@ private:
     std::vector < std::shared_ptr<WaveTableOsc> > m_unisonOscillators;
     AudioContext & m_contextRef;
     WaveTableWaveType m_cachedType;
+
     inline float fastexp2(float p)
     {
         if (p < -126.f) p = -126.f;
@@ -66,14 +65,12 @@ private:
     AudioFloatArray m_phaseModValues;
     AudioFloatArray m_phaseModDepthValues;
     void update(ContextRenderLock & r);
+    inline float* GetSampleAccurateData(ContextRenderLock & r, AudioFloatArray & values, std::shared_ptr<AudioParam> param, size_t bufferSize);
 
 public:
     WaveTableOscillatorNode(AudioContext & ac);
     virtual ~WaveTableOscillatorNode();
     
-    //std::vector<std::shared_ptr<WaveTableOsc>> m_waveOscillators;
-    
-
     static const char * static_name() { return "WavetableOscillator"; }
     virtual const char * name() const override { return static_name(); }
     static AudioNodeDescriptor * desc();
@@ -84,7 +81,7 @@ public:
     WaveTableWaveType type() const;
     void setType(WaveTableWaveType type);
     void resetPhase();
-
+    void setPhase(float p);
     std::shared_ptr<AudioParam> frequency() { return m_frequency; }
     std::shared_ptr<AudioParam> detune() { return m_detune; }
     std::shared_ptr<AudioParam> pulseWidth() { return m_pulseWidth; }
