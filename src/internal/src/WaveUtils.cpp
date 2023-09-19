@@ -180,46 +180,6 @@ std::shared_ptr<WaveTableMemory> sawOsc(void)
     return osc;
 }
 
-std::shared_ptr<WaveTableMemory> convertFromWebAudio(float * webReal, float * webImag, int webLength, int tableLen = 2048)
-{
-    double * freqWaveRe = new double[tableLen];
-    double * freqWaveIm = new double[tableLen];
-
-    // Initialize arrays to zeros
-    for (int idx = 0; idx < tableLen; idx++)
-    {
-        freqWaveRe[idx] = 0.0;
-        freqWaveIm[idx] = 0.0;
-    }
-
-    // Copy the DC and Nyquist components
-    freqWaveRe[0] = webReal[0];
-    freqWaveIm[0] = webImag[0];
-    if (webLength > 1)
-    {
-        freqWaveRe[tableLen >> 1] = webReal[1];
-        freqWaveIm[tableLen >> 1] = webImag[1];
-    }
-
-    // Set the remaining harmonics, ensuring we don't overrun the length of the provided Web Audio API arrays
-    for (int idx = 1; idx < std::min((tableLen >> 1), webLength); idx++)
-    {
-        freqWaveRe[idx] = webReal[idx];
-        freqWaveIm[idx] = webImag[idx];
-
-        // Mirror for negative frequencies, and invert the phase
-        freqWaveRe[tableLen - idx] = webReal[idx];
-        freqWaveIm[tableLen - idx] = -webImag[idx];
-    }
-
-    auto osc = std::make_shared<WaveTableMemory>();
-    fillTables(osc.get(), freqWaveRe, freqWaveIm, tableLen);
-
-    delete[] freqWaveRe;
-    delete[] freqWaveIm;
-    return osc;
-}
-
 std::shared_ptr<WaveTableMemory> sinOsc(void)
 {
     int tableLen = 2048;  // to give full bandwidth from 20 Hz
@@ -244,7 +204,25 @@ std::shared_ptr<WaveTableMemory> sinOsc(void)
     return osc;
 }
 
-// Triangle wave oscillator
+
+std::shared_ptr<WaveTableMemory> periodicWaveOsc(const std::vector<double>& reals, const std::vector<double>& imags)
+{
+    int tableLen = 2048;
+    int idx;
+    std::vector<double> real = std::vector<double>(imags);
+    std::vector<double> imag = std::vector<double>(reals);
+
+    // Pad arrays with zeros up tableLen
+    real.resize(tableLen, 0.0);
+    imag.resize(tableLen, 0.0);
+
+    auto osc = std::make_shared<WaveTableMemory>();
+    fillTables(osc.get(), real.data(), imag.data(), tableLen);
+
+    return osc;
+}
+
+//// Triangle wave oscillator
 std::shared_ptr<WaveTableMemory> triangleOsc(void)
 {
     int tableLen = 2048;

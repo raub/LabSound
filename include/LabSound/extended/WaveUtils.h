@@ -8,6 +8,8 @@
 #ifndef WaveUtils_h
 #define WaveUtils_h
 #include <memory>
+#include <vector>
+
 namespace lab
 {
 	class WaveTableMemory;
@@ -22,7 +24,7 @@ namespace lab
 	std::shared_ptr<WaveTableMemory> squareOsc(void);
 	std::shared_ptr<WaveTableMemory> triangleOsc(void);
 	std::shared_ptr<WaveTableMemory> noiseOsc(void);
-	std::shared_ptr<WaveTableMemory> convertFromWebAudio(float * webReal, float * webImag, int webLength);
+    std::shared_ptr<WaveTableMemory> periodicWaveOsc(const std::vector<double> & reals, const std::vector<double> & imags);
 	WaveTableMemory * waveOsc(double * waveSamples, int tableLen);
 }
 #endif
