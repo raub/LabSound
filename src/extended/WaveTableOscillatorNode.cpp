@@ -74,13 +74,15 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
     m_pulseWidth->setValue(0.5f);
     m_phaseMod->setValue(0.f);
     m_phaseModDepth->setValue(0.f);
-    m_waveOsc = std::make_shared<WaveTableOsc>();
-    m_unisonCount->setUint32(0);
+    m_unisonCount->setUint32(1);
     m_unisonSpread->setFloat(0.f);
     // An oscillator is always mono.
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
-    setType(WaveTableWaveType::SINE);
     initialize();
+    {
+        ContextRenderLock r(&ac, "initwave");
+        update(r);
+    }
 }
 
 WaveTableOscillatorNode::~WaveTableOscillatorNode()
@@ -95,7 +97,6 @@ WaveTableWaveType WaveTableOscillatorNode::type() const
 
 void WaveTableOscillatorNode::resetPhase()
 {
-    m_waveOsc->ResetPhase();
     for (auto & osc : m_unisonOscillators)
     {
         osc->ResetPhase();
@@ -105,32 +106,39 @@ void WaveTableOscillatorNode::resetPhase()
 
 void WaveTableOscillatorNode::setPhase(float p)
 {
-    m_waveOsc->SetPhaseOffset(p);
     for (auto & osc : m_unisonOscillators)
     {
         osc->SetPhaseOffset(p);
     }
 }
 
+WaveTableMemory::waveTable * WaveTableOscillatorNode::GetBaseWavetable()
+{
+    if (m_unisonOscillators.size() == 0)
+        return nullptr;
+
+    return m_unisonOscillators[0]->GetBaseWavetable();
+}
+
 
 void WaveTableOscillatorNode::setType(WaveTableWaveType type)
 {
     m_cachedType = type;
-    m_waveOsc->SetType(type);
     m_type->setUint32(static_cast<uint32_t>(type));
 }
 
 void WaveTableOscillatorNode::update(ContextRenderLock& r)
 {
-    auto const desired = m_unisonCount->valueUint32();
+    auto const desired = m_unisonCount->valueUint32() > 0 ? m_unisonCount->valueUint32() : 1;
+    
     auto const actual = m_unisonOscillators.size();
     if (desired != actual)
     {
         m_unisonOscillators.clear();
         if (desired > 0)
         {
-            std::cout << "allocating " << m_unisonCount->valueUint32() << ":" << m_type->valueUint32() << " oscillators" << std::endl;
-            m_unisonOscillators.resize(m_unisonCount->valueUint32());
+            std::cout << "allocating " << desired << ":" << m_type->valueUint32() << " oscillators" << std::endl;
+            m_unisonOscillators.resize(desired);
             for (int i = 0; i < m_unisonCount->valueUint32(); i++)
             {
                 m_unisonOscillators[i] = std::make_shared<WaveTableOsc>(static_cast<WaveTableWaveType>(m_type->valueUint32()));
@@ -197,14 +205,14 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
 
     auto RenderSamplesMinusOffset = [&]()
     {
+        const auto & wave = m_unisonOscillators[0].get();
         for (int i = offset, end = offset + nonSilentFramesToProcess; i < end; ++i)
         {
             // Convert cents to frequency ratio directly within the computation
             float normalizedFrequency = (*frequencies++ * fastexp2(*detunes++ * ratio)) / sample_rate;
-            m_waveOsc->SetFrequency(normalizedFrequency);
-            m_waveOsc->SetPhaseOffset(*pulseWidths++);
-            *destination++ = m_waveOsc->GetOutputMinusOffset();
-            m_waveOsc->UpdatePhase(*phaseMods++ * *phaseModDepths++);
+            wave->SetPhaseOffset(*pulseWidths++);
+            *destination++ = wave->GetOutputMinusOffset();
+            wave->UpdatePhase(*phaseMods++ * *phaseModDepths++);
         }
     };
 
@@ -271,13 +279,14 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
 
     auto RenderSamples = [&]()
     {
+        const auto & wave = m_unisonOscillators[0].get();
         for (int i = offset, end = offset + nonSilentFramesToProcess; i < end; ++i)
         {
             // Convert cents to frequency ratio directly within the computation
             float normalizedFrequency = (frequencies[i] * fastexp2(detunes[i] * ratio)) / sample_rate;
-            m_waveOsc->SetFrequency(normalizedFrequency);
-            *destination++ = m_waveOsc->GetOutput();
-            m_waveOsc->UpdatePhase(*phaseMods++ * *phaseModDepths++
+            wave->SetFrequency(normalizedFrequency);
+            *destination++ = wave->GetOutput();
+            wave->UpdatePhase(*phaseMods++ * *phaseModDepths++
             );
         }
     };

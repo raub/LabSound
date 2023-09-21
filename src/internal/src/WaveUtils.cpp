@@ -58,6 +58,8 @@ int fillTables(WaveTableMemory * mem, double * freqWaveRe, double * freqWaveIm, 
     // maximum non-aliasing playback rate is 1 / (2 * maxHarmonic), but we allow aliasing up to the
     // point where the aliased harmonic would meet the next octave table, which is an additional 1/3
     double topFreq = 2.0 / 3.0 / maxHarmonic;
+    //
+    //    double topFreq = 1.0 / (2.0 * maxHarmonic);        
 
     // for subsquent tables, double topFreq and remove upper half of harmonics
     double * ar = new double[numSamples];

@@ -30,7 +30,6 @@ private:
     virtual double latencyTime(ContextRenderLock & r) const override { return 0; }
     virtual bool propagatesSilence(ContextRenderLock & r) const override;
     std::shared_ptr<AudioSetting> m_type;
-    std::shared_ptr<WaveTableOsc> m_waveOsc;
     std::vector < std::shared_ptr<WaveTableOsc> > m_unisonOscillators;
     AudioContext & m_contextRef;
     WaveTableWaveType m_cachedType;
@@ -90,6 +89,7 @@ public:
     std::shared_ptr<AudioSetting> unisonCount() { return m_unisonCount; }
     std::shared_ptr<AudioSetting> unisonSpread() { return m_unisonSpread; }
 
+    WaveTableMemory::waveTable * GetBaseWavetable();
 
     void processWavetable(ContextRenderLock & r, int bufferSize, int offset, int count);
     

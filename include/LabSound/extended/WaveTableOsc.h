@@ -228,9 +228,15 @@ public:
         return GetOutput();
     }
 
+    WaveTableMemory::waveTable* GetBaseWavetable()
+    {
+        return &waveMem->mWaveTables[0];
+    }
+
     //
     // GetOutput: Returns the current oscillator output
     //
+
     float GetOutput()
     {
         // waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
