@@ -1,7 +1,8 @@
 #include "Labsound/extended/WaveTableOsc.h"
 #include "../internal/WaveformOrgan2.h"
 #include "../internal/WaveformPiano.h"
-#include "../internal/WaveformWarmSaw.h"
+#include "../internal/WaveformFuzzy.h"
+#include "../internal/WaveformAhh.h"
 
 namespace lab
 {
@@ -19,10 +20,12 @@ namespace lab
 		addWave(WaveTableWaveType::TRIANGLE, triangleOsc());
 		addWave(WaveTableWaveType::SQUARE, squareOsc());
 		addWave(WaveTableWaveType::SAWTOOTH, sawOsc());
-        addWave(WaveTableWaveType::WARMSAW, periodicWaveOsc(warm_saw_real, warm_saw_imag));
+        addWave(WaveTableWaveType::FUZZY, periodicWaveOsc(fuzzy_real, fuzzy_imag));
         addWave(WaveTableWaveType::ORGAN, periodicWaveOsc(organ_real, organ_imag));
         addWave(WaveTableWaveType::ORGAN2, periodicWaveOsc(organ2_real, organ2_imag));
         addWave(WaveTableWaveType::PIANO, periodicWaveOsc(piano_real, piano_imag));
 		addWave(WaveTableWaveType::BASS, periodicWaveOsc(bass_real, bass_imag));
+        addWave(WaveTableWaveType::VOCAL_AHH, periodicWaveOsc(ahh_real, ahh_imag));
+        
 	}
 }

@@ -239,8 +239,8 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
                 wave->SetFrequency(normalizedFrequency);
                 
                 sample += wave->GetOutput();
-                wave->UpdatePhase();
-                
+                //wave->UpdatePhase();
+                wave->UpdatePhase(phaseMods[i] * phaseModDepths[i]);
             }
             *destination++ = sample * gain;
         }
@@ -270,9 +270,8 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
                 wave->SetFrequency(normalizedFrequency);
                 sample += wave->GetOutputMinusOffset();
                 // wave->UpdatePhase();
-                const float mod = *phaseMods++;
-                const float depth = *phaseModDepths++;
-                wave->UpdatePhase();//mod * depth);
+//                wave->UpdatePhase();//mod * depth);
+                wave->UpdatePhase(*phaseMods++ * *phaseModDepths++);
             }
             *destination++ = sample * gain;
         }
@@ -287,17 +286,16 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
             float normalizedFrequency = (frequencies[i] * fastexp2(detunes[i] * ratio)) / sample_rate;
             wave->SetFrequency(normalizedFrequency);
             *destination++ = wave->GetOutput();
-            wave->UpdatePhase(*phaseMods++ * *phaseModDepths++
-            );
+            wave->UpdatePhase(*phaseMods++ * *phaseModDepths++);
         }
     };
 
     WaveTableWaveType type = static_cast<WaveTableWaveType> (m_type->valueUint32());
     if (m_unisonCount->valueUint32() > 1)
     {
-        //if (type == WaveTableWaveType::SQUARE)
-        //    RenderSamplesWithUnisonMinusOffset();
-        //else
+        if (type == WaveTableWaveType::SQUARE)
+            RenderSamplesWithUnisonMinusOffset();
+        else
             RenderSamplesWithUnison();
     }
     else

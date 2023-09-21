@@ -38,11 +38,12 @@ enum class WaveTableWaveType
     TRIANGLE,
     SQUARE,
     SAWTOOTH,
-    WARMSAW,
+    FUZZY,
     ORGAN,
     ORGAN2,
     PIANO,
     BASS,
+    VOCAL_AHH,
     CUSTOM,
     _WavetableWaveCount
 };
@@ -242,10 +243,11 @@ public:
         // waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
         WaveTableMemory::waveTable * waveTable = &waveMem->mWaveTables[mCurWaveTable];
         // linear interpolation
-        // if (mPhasor > 1.0)
+        //if (mPhasor > 1.0)
         //{
         //    mPhasor -= 1.0;
         //}
+        
         float temp = mPhasor * waveTable->waveTableLen;
         int intPart = temp;
         float fracPart = temp - intPart;
