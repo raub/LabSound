@@ -210,6 +210,7 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
         {
             // Convert cents to frequency ratio directly within the computation
             float normalizedFrequency = (*frequencies++ * fastexp2(*detunes++ * ratio)) / sample_rate;
+            wave->SetFrequency(normalizedFrequency);
             wave->SetPhaseOffset(*pulseWidths++);
             *destination++ = wave->GetOutputMinusOffset();
             wave->UpdatePhase(*phaseMods++ * *phaseModDepths++);
