@@ -239,7 +239,6 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
                 wave->SetFrequency(normalizedFrequency);
                 
                 sample += wave->GetOutput();
-                //wave->UpdatePhase();
                 wave->UpdatePhase(phaseMods[i] * phaseModDepths[i]);
             }
             *destination++ = sample * gain;
@@ -266,12 +265,10 @@ void WaveTableOscillatorNode::processWavetable(ContextRenderLock & r, int buffer
                 const auto & wave = m_unisonOscillators[u].get();
                 float normalizedFrequency = (freq * fastexp2((detune + detuneAmount) * ratio)) / sample_rate;
                 
-                wave->SetPhaseOffset(*pulseWidths++);
+                wave->SetPhaseOffset(pulseWidths[i]);
                 wave->SetFrequency(normalizedFrequency);
                 sample += wave->GetOutputMinusOffset();
-                // wave->UpdatePhase();
-//                wave->UpdatePhase();//mod * depth);
-                wave->UpdatePhase(*phaseMods++ * *phaseModDepths++);
+                wave->UpdatePhase(phaseMods[i] * phaseModDepths[i]);
             }
             *destination++ = sample * gain;
         }
