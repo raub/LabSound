@@ -76,6 +76,7 @@ WaveTableOscillatorNode::WaveTableOscillatorNode(AudioContext & ac)
     m_phaseModDepth->setValue(0.f);
     m_unisonCount->setUint32(1);
     m_unisonSpread->setFloat(0.f);
+    m_frequency->setValue(0.f);
     // An oscillator is always mono.
     addOutput(std::unique_ptr<AudioNodeOutput>(new AudioNodeOutput(this, 1)));
     initialize();
