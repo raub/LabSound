@@ -73,9 +73,13 @@ public:
     {
         checkForDirtyCoefficients(r);
         updateCoefficientsIfNecessary(r, true, false);
-        while (the_filters.size() < sourceBus->numberOfChannels())
+        while (the_filters.size() != sourceBus->numberOfChannels())
         {
-            the_filters.push_back(std::make_unique<Biquad>());
+            the_filters.clear();
+            for (int i = 0; i < sourceBus->numberOfChannels(); i++)
+            {
+                the_filters.push_back(std::make_unique<Biquad>());
+            }
         }
         if (sourceBus->numberOfChannels() != destinationBus->numberOfChannels())
         {
