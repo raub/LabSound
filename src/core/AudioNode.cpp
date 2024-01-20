@@ -141,7 +141,7 @@ bool AudioNodeScheduler::update(ContextRenderLock & r, int epoch_length, const c
                 // exactly on start, or late, get going straight away
                 _renderOffset = 0;
                 _renderLength = epoch_length;
-                LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::FADE_IN);
+                //LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::FADE_IN);
                 _playbackState = SchedulingState::FADE_IN;
             }
             else if (_startWhen < _epoch + epoch_length)
@@ -149,7 +149,7 @@ bool AudioNodeScheduler::update(ContextRenderLock & r, int epoch_length, const c
                 // start falls within the frame
                 _renderOffset = static_cast<int>(_startWhen - _epoch);
                 _renderLength = epoch_length - _renderOffset;
-                LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::FADE_IN);
+                //LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::FADE_IN);
                 _playbackState = SchedulingState::FADE_IN;
             }
 
@@ -162,7 +162,7 @@ bool AudioNodeScheduler::update(ContextRenderLock & r, int epoch_length, const c
         case SchedulingState::FADE_IN:
             // start time has been achieved, there'll be one quantum with fade in applied.
             _renderOffset = 0;
-            LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::PLAYING);
+            //LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::PLAYING);
             _playbackState = SchedulingState::PLAYING;
             // fall through to PLAYING to allow render length to be adjusted if stop-start is less than one quantum length
 
@@ -174,7 +174,7 @@ bool AudioNodeScheduler::update(ContextRenderLock & r, int epoch_length, const c
             {
                 // exactly on start, or late, stop straight away, render a whole frame of fade out
                 _renderLength = epoch_length - _renderOffset;
-                LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::STOPPING);
+                //LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::STOPPING);
                 _playbackState = SchedulingState::STOPPING;
             }
             else if (_stopWhen < _epoch + epoch_length)
@@ -182,7 +182,7 @@ bool AudioNodeScheduler::update(ContextRenderLock & r, int epoch_length, const c
                 // stop falls within the frame
                 _renderOffset = 0;
                 _renderLength = static_cast<int>(_stopWhen - _epoch);
-                LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::STOPPING);
+                //LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::STOPPING);
                 _playbackState = SchedulingState::STOPPING;
             }
 
@@ -194,7 +194,7 @@ bool AudioNodeScheduler::update(ContextRenderLock & r, int epoch_length, const c
             {
                 // scheduled stop has occured, so make sure stop doesn't immediately trigger again
                 _stopWhen = std::numeric_limits<uint64_t>::max();
-                LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::UNSCHEDULED);
+                //LOG_PLAYBACK_STATE_TRANSITION(node_name, _playbackState, SchedulingState::UNSCHEDULED);
                 _playbackState = SchedulingState::UNSCHEDULED;
                 if (_onEnded)
                     r.context()->enqueueEvent(_onEnded);
