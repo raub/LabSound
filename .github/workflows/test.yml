@@ -33,22 +33,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -qq pulseaudio libpulse-dev
 
       - name: Create Build Environment
-        run: cmake -E make_directory ${{github.workspace}}/build
+        run: mkdir -p build
 
       - name: Configure - Windows
         if: matrix.os == 'windows-2022'
-        working-directory: ${{github.workspace}}/build
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -A x64 -T v142 -DCMAKE_RULE_MESSAGES=OFF
+        run: cd build && cmake -DCMAKE_BUILD_TYPE=Release -A x64 -T v142 -DCMAKE_RULE_MESSAGES=OFF ..
 
       - name: Configure - Unix
         if: matrix.os != 'windows-2022'
-        working-directory: ${{github.workspace}}/build
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DCMAKE_RULE_MESSAGES=OFF
+        run: cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_RULE_MESSAGES=OFF ..
 
       - name: Build
-        working-directory: ${{github.workspace}}/build
-        # Execute the build.  You can specify a specific target with "--target <NAME>"
-        run: cmake --build . --config Release
+        run: cd build && cmake --build . --config Release
 
       - name: Test
         working-directory: ${{github.workspace}}/build
