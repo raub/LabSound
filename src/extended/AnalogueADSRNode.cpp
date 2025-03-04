@@ -9,7 +9,6 @@
 #include "LabSound/extended/AudioContextLock.h"
 #include "LabSound/extended/Registry.h"
 
-#include "internal/VectorMath.h"
 #include <iostream>
 
 #include <deque>
