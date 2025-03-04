@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // Copyright (C) 2020, The LabSound Authors. All rights reserved.
-
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "ExamplesCommon.h"
 #include "LabSound/extended/Util.h"
 #include "LabSound/backends/AudioDevice_RtAudio.h"

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // Copyright (C) 2015, The LabSound Authors. All rights reserved.
 
-#ifndef ADSR_NODE_H
-#define ADSR_NODE_H
+#ifndef ANALOGUEADSR_NODE_H
+#define ANALOGUEADSR_NODE_H
 
 #include "LabSound/core/AudioNode.h"
 #include "LabSound/core/AudioContext.h"
@@ -12,14 +12,22 @@ namespace lab
 {
 
 
-class ADSRNode : public AudioNode
+class AnalogueADSRNode : public AudioNode
 {
+private:
     class ADSRNodeImpl;
     ADSRNodeImpl * adsr_impl;
+    
 
 public:
-    ADSRNode(AudioContext &);
-    virtual ~ADSRNode();
+    enum ADSRMode
+    {
+        ADSR,
+        ADS
+    };
+
+    AnalogueADSRNode(AudioContext &, ADSRMode adsrMode = ADSR);
+    virtual ~AnalogueADSRNode();
 
     static const char* static_name() { return "ADSR"; }
     virtual const char* name() const override { return static_name(); }
@@ -29,7 +37,7 @@ public:
     bool finished(ContextRenderLock &);
 
     void set(float attack_time, float attack_level, float decay_time, float sustain_time, float sustain_level, float release_time);
-
+    void setMode(ADSRMode m);
     virtual void process(ContextRenderLock& r, int bufferSize) override;
     virtual void reset(ContextRenderLock&) override;
     virtual double tailTime(ContextRenderLock& r) const override { return 0.; }

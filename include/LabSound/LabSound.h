@@ -32,6 +32,7 @@
 #include "LabSound/core/WaveShaperNode.h"
 #include "LabSound/core/ConstantSourceNode.h"
 // LabSound Extended Public API
+#include "LabSound/extended/AnalogueADSRNode.h"
 #include "LabSound/extended/ADSRNode.h"
 #include "LabSound/extended/AudioFileReader.h"
 #include "LabSound/extended/BPMDelayNode.h"
@@ -53,6 +54,8 @@
 #include "LabSound/extended/SpatializationNode.h"
 #include "LabSound/extended/SpectralMonitorNode.h"
 #include "LabSound/extended/SupersawNode.h"
+#include "LabSound/extended/MoogFilterNode.h"
+#include "LabSound/extended/WaveTableOscillatorNode.h"
 
 #endif
 
