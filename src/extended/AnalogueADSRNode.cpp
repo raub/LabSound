@@ -10,6 +10,7 @@
 #include "LabSound/extended/Registry.h"
 #include "LabSound/extended/VectorMath.h"
 
+#include <math.h>
 #include <iostream>
 
 #include <deque>
@@ -88,7 +89,7 @@ public:
 
     inline double calcCoef(double rate, double targetRatio)
     {
-        return (rate <= 0) ? 0.0 : exp(-::log((1.0 + targetRatio) / targetRatio) / rate);
+        return (rate <= 0) ? 0.0 : exp(-log((1.0 + targetRatio) / targetRatio) / rate);
     }
 
     void setTargetRatioA(double targetRatio)
