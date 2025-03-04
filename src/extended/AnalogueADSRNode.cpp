@@ -8,6 +8,7 @@
 #include "LabSound/extended/AnalogueADSRNode.h"
 #include "LabSound/extended/AudioContextLock.h"
 #include "LabSound/extended/Registry.h"
+#include "LabSound/extended/VectorMath.h"
 
 #include <iostream>
 
