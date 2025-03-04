@@ -1,4 +1,4 @@
-#include "Labsound/extended/WaveTableOsc.h"
+#include "LabSound/extended/WaveTableOsc.h"
 #include "../internal/WaveformOrgan2.h"
 #include "../internal/WaveformPiano.h"
 #include "../internal/WaveformFuzzy.h"
