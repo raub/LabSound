@@ -210,8 +210,8 @@ bool AudioContext::loadHrtfDatabase(const std::string & searchPath)
         m_internal->hrtfDatabaseLoader.reset(db);
         db->loadAsynchronously();
         db->waitForLoaderThreadCompletion();
-        printf("db files found and loaded %d", db->database()->files_found_and_loaded() ? 1 : 0);
-        printf("num elevs %d num az %d\n", db->database()->numberOfElevations(), db->database()->numberOfAzimuths());
+        // printf("db files found and loaded %d", db->database()->files_found_and_loaded() ? 1 : 0);
+        // printf("num elevs %d num az %d\n", db->database()->numberOfElevations(), db->database()->numberOfAzimuths());
         loaded = db->database()->files_found_and_loaded();
         loaded = loaded && db->database()->numberOfElevations() > 0 && db->database()->numberOfAzimuths() > 0;
     }

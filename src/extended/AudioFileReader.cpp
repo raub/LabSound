@@ -82,7 +82,7 @@ std::shared_ptr<AudioBus> MakeBusFromFile(const char * filePath, bool mixToMono)
         if (test) {
             fclose(test);
             nyquist_io.Load(audioData, std::string(filePath));
-            printf("Loaded %s\n", filePath);
+            // printf("Loaded %s\n", filePath);
         }
         else {
             delete audioData;

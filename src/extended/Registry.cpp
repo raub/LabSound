@@ -45,7 +45,7 @@ NodeRegistry::~NodeRegistry()
 
 bool NodeRegistry::Register(char const* const name, AudioNodeDescriptor* desc, CreateNodeFn c, DeleteNodeFn d)
 {
-    printf("Registering %s\n", name);
+    // printf("Registering %s\n", name);
     _detail->descriptors[name] = { name, desc, c, d };
     return true;
 }

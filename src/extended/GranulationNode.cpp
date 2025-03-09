@@ -175,7 +175,7 @@ bool GranulationNode::setGrainSource(ContextRenderLock & r, std::shared_ptr<Audi
         /// -or- they should be settings if they don't vary per sample
         const float random_pos_offset = rnd.random_float(grainPositionMin->value(), grainPositionMax->value());
         
-        printf("grain offset %f\n", random_pos_offset);
+        // printf("grain offset %f\n", random_pos_offset);
         
         grain_pool.emplace_back(grain(sample_to_granulate, window_bus, r.context()->sampleRate(), random_pos_offset, grain_duration_seconds, grainPlaybackFreq->value()));
     }
