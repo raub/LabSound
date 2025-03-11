@@ -31,7 +31,7 @@ elseif(APPLE)
             "-framework CoreAudio"
             "-framework Cocoa")
 #    endif()
-    target_compile_options(${proj} PRIVATE -mavx -fPIC)
+    target_compile_options(${proj} PRIVATE -fPIC)
     target_link_libraries(${proj} ${DARWIN_LIBS})
 elseif(ANDROID)
     target_compile_options(${proj} PRIVATE -fPIC)

@@ -140,7 +140,7 @@ function (configureProj proj)
         # TODO: These vars are for libnyquist and should be set in the find libynquist script.
         target_compile_definitions(${proj} PRIVATE HAVE_STDINT_H=1 HAVE_SINF=1)
     elseif(APPLE)
-        target_compile_options(${proj} PRIVATE -mavx -fPIC)
+        target_compile_options(${proj} PRIVATE -fPIC)
     elseif(ANDROID)
         target_compile_options(${proj} PRIVATE -fPIC)
         target_compile_definitions(${proj} PRIVATE USE_KISS_FFT=1)
@@ -177,15 +177,18 @@ function (configureProj proj)
 endfunction()
 
 target_include_directories(LabSound PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 target_include_directories(LabSound PRIVATE
+    ${LABSOUND_ROOT}/third_party/miniaudio
     ${LABSOUND_ROOT}/src
     ${LABSOUND_ROOT}/src/internal
     ${LABSOUND_ROOT}/third_party
     ${LABSOUND_ROOT}/third_party/libsamplerate/include
+    ${LABSOUND_ROOT}/third_party/libnyquist/include
 )
+
 
 if (MSVC_IDE)
     # hack to get around the "Debug" and "Release" directories cmake tries to add on Windows
