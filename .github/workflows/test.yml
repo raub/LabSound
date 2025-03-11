@@ -50,8 +50,11 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_RULE_MESSAGES=OFF -DLABSOUND_USE_RTAUDIO=ON ..
           cmake --build . --target LabSound --config Release
 
-      - name: Build libnyquist
-        run: cd build && cmake --build . --target libnyquist --config Release
+      - name: Build - Other
+        run: |
+          cd build
+          cmake --build . --target libnyquist --config Release
+          cmake --build . --target LabSoundExample --config Release
 
       - name: Test
         # Execute tests defined by the CMake configuration.

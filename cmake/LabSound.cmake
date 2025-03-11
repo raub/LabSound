@@ -39,19 +39,6 @@ elseif (LABSOUND_USE_RTAUDIO)
         "${LABSOUND_ROOT}/src/backends/RtAudio/RtAudio.cpp"
         "${LABSOUND_ROOT}/src/backends/RtAudio/RtAudio.h"
     )
-    if (WIN32)
-        target_compile_definitions(LabSound PRIVATE __WINDOWS_WASAPI__=1)
-    elseif (APPLE)
-        target_compile_definitions(LabSound PRIVATE __MACOSX_CORE__=1)
-    else()
-        if (LABSOUND_JACK)
-            target_compile_definitions(LabSound PRIVATE __UNIX_JACK__=1)
-        elseif (LABSOUND_PULSE)
-            target_compile_definitions(LabSound PRIVATE __LINUX_PULSE__=1)
-        elseif (LABSOUND_ASOUND)
-            target_compile_definitions(LabSound PRIVATE __LINUX_ALSA__=1)
-        endif()
-    endif()
 endif()
 
 #option(LIBSAMPLERATE_EXAMPLES "" OFF)
@@ -80,7 +67,8 @@ endif()
 # TODO ooura or kissfft? benchmark and choose. Then benchmark vs FFTFrameAppleAccelerate
 set(ooura_src
     "${LABSOUND_ROOT}/third_party/ooura/src/fftsg.cpp"
-    "${LABSOUND_ROOT}/third_party/ooura/fftsg.h")
+    "${LABSOUND_ROOT}/third_party/ooura/fftsg.h"
+)
 
 add_library(LabSound STATIC
     "${LABSOUND_ROOT}/include/LabSound/LabSound.h"
@@ -89,7 +77,23 @@ add_library(LabSound STATIC
     ${labsnd_int_h}      ${labsnd_int_src}
     ${labsnd_fft_src}    ${labsnd_backend}
     ${ooura_src}
- )
+)
+
+if (LABSOUND_USE_RTAUDIO)
+ if (WIN32)
+     target_compile_definitions(LabSound PRIVATE __WINDOWS_WASAPI__=1)
+ elseif (APPLE)
+     target_compile_definitions(LabSound PRIVATE __MACOSX_CORE__=1)
+ else()
+     if (LABSOUND_JACK)
+         target_compile_definitions(LabSound PRIVATE __UNIX_JACK__=1)
+     elseif (LABSOUND_PULSE)
+         target_compile_definitions(LabSound PRIVATE __LINUX_PULSE__=1)
+     elseif (LABSOUND_ASOUND)
+         target_compile_definitions(LabSound PRIVATE __LINUX_ALSA__=1)
+     endif()
+ endif()
+endif()
 
 if (APPLE)
     set_target_properties(LabSound PROPERTIES

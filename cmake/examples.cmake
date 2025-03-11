@@ -12,10 +12,7 @@ set(proj LabSoundExample)
 
 if(WIN32)
     if(MSVC)
-        # Arch AVX is problematic for many users, so disable it until
-        # some reasonable strategy (a separate AVX target?) is determined
         target_compile_options(${proj} PRIVATE /arch:AVX /Zi)
-        # target_compile_options(${proj} PRIVATE /Zi)
     endif(MSVC)
     target_compile_definitions(${proj} PRIVATE __WINDOWS_WASAPI__=1)
     # TODO: These vars are for libniquist and should be set in the find libynquist script.
