@@ -35,7 +35,7 @@ elseif (LABSOUND_USE_RTAUDIO)
     message(STATUS "Using RtAudio backend")
     set(labsnd_backend
         "${LABSOUND_ROOT}/src/backends/RtAudio/AudioDevice_RtAudio.cpp"
-        "${LABSOUND_ROOT}/src/backends/RtAudio/AudioDevice_RtAudio.h"
+        "${LABSOUND_ROOT}/include/LabSound/backends/AudioDevice_RtAudio.h"
         "${LABSOUND_ROOT}/src/backends/RtAudio/RtAudio.cpp"
         "${LABSOUND_ROOT}/src/backends/RtAudio/RtAudio.h"
     )
