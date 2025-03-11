@@ -565,8 +565,9 @@ void AudioContext::update()
         {
             const double now = currentTime();
             const float delta = static_cast<float>(now - lastGraphUpdateTime);
-            if (delta <= 0.f) // no need to keep running if the graph is no longer updating
-                break;
+            // BUG: kills the thread before I even do any work
+            // if (delta <= 0.f) // no need to keep running if the graph is no longer updating
+            //     break;
             lastGraphUpdateTime = static_cast<float>(now);
             graphKeepAlive -= delta;
         }
