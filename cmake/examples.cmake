@@ -77,7 +77,7 @@ if (APPLE)
 endif()
 
 if (NOT IOS)
-target_link_libraries(LabSoundExample LabSound LabSoundRtAudio)
+target_link_libraries(LabSoundExample LabSound)
 endif()
 
 if(MINGW)
