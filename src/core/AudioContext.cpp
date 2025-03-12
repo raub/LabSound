@@ -313,7 +313,7 @@ void AudioContext::handlePreRenderTasks(ContextRenderLock & r)
                                     param_connection.source->output(param_connection.destIndex));
 
                 // if unscheduled, the source should start to play as soon as possible
-                if (!param_connection.source->isScheduledNode())
+                if (param_connection.source->isScheduledNode())
                     param_connection.source->_self->_scheduler.start(0);
             }
             else
@@ -335,7 +335,7 @@ void AudioContext::handlePreRenderTasks(ContextRenderLock & r)
                                             node_connection.destination->input(node_connection.destIndex),
                                             node_connection.source->output(node_connection.srcIndex));
 
-                    if (!node_connection.source->isScheduledNode())
+                    if (node_connection.source->isScheduledNode())
                         node_connection.source->_self->_scheduler.start(0);
                 }
                 break;
