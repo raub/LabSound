@@ -343,10 +343,10 @@ AudioNode::AudioNode(AudioContext & ac, AudioNodeDescriptor const & desc)
     }
     
     _self->m_channelCount = desc.initialChannelCount;
-    if (_self->m_channelCount > 0) {
-        addOutput(std::unique_ptr<AudioNodeOutput>(
-                    new AudioNodeOutput(this, _self->m_channelCount)));
-    }
+    // if (_self->m_channelCount > 0) { // BUG: nodes with `desc = {..., 0}` never have an output
+    addOutput(std::unique_ptr<AudioNodeOutput>(
+                new AudioNodeOutput(this, _self->m_channelCount)));
+    // }
 }
 
 AudioNode::~AudioNode()

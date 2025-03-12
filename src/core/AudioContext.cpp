@@ -210,8 +210,8 @@ bool AudioContext::loadHrtfDatabase(const std::string & searchPath)
         m_internal->hrtfDatabaseLoader.reset(db);
         db->loadAsynchronously();
         db->waitForLoaderThreadCompletion();
-        printf("db files found and loaded %d", db->database()->files_found_and_loaded() ? 1 : 0);
-        printf("num elevs %d num az %d\n", db->database()->numberOfElevations(), db->database()->numberOfAzimuths());
+        // printf("db files found and loaded %d", db->database()->files_found_and_loaded() ? 1 : 0);
+        // printf("num elevs %d num az %d\n", db->database()->numberOfElevations(), db->database()->numberOfAzimuths());
         loaded = db->database()->files_found_and_loaded();
         loaded = loaded && db->database()->numberOfElevations() > 0 && db->database()->numberOfAzimuths() > 0;
     }
@@ -313,7 +313,7 @@ void AudioContext::handlePreRenderTasks(ContextRenderLock & r)
                                     param_connection.source->output(param_connection.destIndex));
 
                 // if unscheduled, the source should start to play as soon as possible
-                if (!param_connection.source->isScheduledNode())
+                if (param_connection.source->isScheduledNode())
                     param_connection.source->_self->_scheduler.start(0);
             }
             else
@@ -335,7 +335,7 @@ void AudioContext::handlePreRenderTasks(ContextRenderLock & r)
                                             node_connection.destination->input(node_connection.destIndex),
                                             node_connection.source->output(node_connection.srcIndex));
 
-                    if (!node_connection.source->isScheduledNode())
+                    if (node_connection.source->isScheduledNode())
                         node_connection.source->_self->_scheduler.start(0);
                 }
                 break;
@@ -565,8 +565,9 @@ void AudioContext::update()
         {
             const double now = currentTime();
             const float delta = static_cast<float>(now - lastGraphUpdateTime);
-            if (delta <= 0.f) // no need to keep running if the graph is no longer updating
-                break;
+            // BUG: kills the thread before I even do any work
+            // if (delta <= 0.f) // no need to keep running if the graph is no longer updating
+            //     break;
             lastGraphUpdateTime = static_cast<float>(now);
             graphKeepAlive -= delta;
         }

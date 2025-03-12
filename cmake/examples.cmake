@@ -12,10 +12,7 @@ set(proj LabSoundExample)
 
 if(WIN32)
     if(MSVC)
-        # Arch AVX is problematic for many users, so disable it until
-        # some reasonable strategy (a separate AVX target?) is determined
-        #target_compile_options(${proj} PRIVATE /arch:AVX /Zi)
-        target_compile_options(${proj} PRIVATE /Zi)
+        target_compile_options(${proj} PRIVATE /arch:AVX /Zi)
     endif(MSVC)
     target_compile_definitions(${proj} PRIVATE __WINDOWS_WASAPI__=1)
     # TODO: These vars are for libniquist and should be set in the find libynquist script.
@@ -34,6 +31,7 @@ elseif(APPLE)
             "-framework CoreAudio"
             "-framework Cocoa")
 #    endif()
+    target_compile_options(${proj} PRIVATE -fPIC)
     target_link_libraries(${proj} ${DARWIN_LIBS})
 elseif(ANDROID)
     target_compile_options(${proj} PRIVATE -fPIC)
@@ -79,7 +77,7 @@ if (APPLE)
 endif()
 
 if (NOT IOS)
-target_link_libraries(LabSoundExample LabSound LabSoundRtAudio)
+target_link_libraries(LabSoundExample LabSound)
 endif()
 
 if(MINGW)

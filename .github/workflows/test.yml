@@ -32,19 +32,52 @@ jobs:
         if: matrix.os == 'ubuntu-22.04' || matrix.os == 'ubuntu-22.04-arm'
         run: sudo apt-get update && sudo apt-get install -qq pulseaudio libpulse-dev
 
-      - name: Create Build Environment
-        run: mkdir -p build
-
-      - name: Configure - Windows
+      - name: Build - Windows RtAudio
         if: matrix.os == 'windows-2022'
-        run: cd build && cmake -DCMAKE_BUILD_TYPE=Release -A x64 -T v142 -DCMAKE_RULE_MESSAGES=OFF ..
+        run: |
+          rm -rf build
+          mkdir -p build
+          cd build
+          cmake -A x64 -T v142 -DLABSOUND_USE_RTAUDIO=ON ..
+          cmake --build . --target LabSound --config Release
 
-      - name: Configure - Unix
+      - name: Build - Unix RtAudio
         if: matrix.os != 'windows-2022'
-        run: cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_RULE_MESSAGES=OFF ..
+        run: |
+          rm -rf build
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_RULE_MESSAGES=OFF -DLABSOUND_USE_RTAUDIO=ON ..
+          cmake --build . --target LabSound --config Release
 
-      - name: Build
-        run: cd build && cmake --build . --config Release
+      - name: Build - Other
+        run: |
+          cd build
+          cmake --build . --target libnyquist --config Release
+          cmake --build . --target LabSoundExample --config Release
+
+      - name: Test
+        # Execute tests defined by the CMake configuration.
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        run: cd build && ctest -C Release
+
+      - name: Build - Windows MiniAudio
+        if: matrix.os == 'windows-2022'
+        run: |
+          rm -rf build
+          mkdir -p build
+          cd build
+          cmake -A x64 -T v142 -DLABSOUND_USE_MINIAUDIO=ON ..
+          cmake --build . --target LabSound --config Release
+
+      - name: Build - Unix MiniAudio
+        if: matrix.os != 'windows-2022'
+        run: |
+          rm -rf build
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_RULE_MESSAGES=OFF -DLABSOUND_USE_MINIAUDIO=ON ..
+          cmake --build . --target LabSound --config Release
 
       - name: Test
         # Execute tests defined by the CMake configuration.
