@@ -34,6 +34,8 @@ elseif (LABSOUND_PULSE)
 endif()
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 
 # turn off building libnyquist samples
 set(LIBNYQUIST_BUILD_EXAMPLE OFF)
